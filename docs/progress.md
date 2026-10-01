@@ -7,7 +7,8 @@ work from the same source of truth).
 ## Phase 0 — Office spike
 
 **Status: built, waiting for the Windows/Mac run.** Acceptance (filled result table + decisions in
-[`phase0-findings.md`](phase0-findings.md)) needs Tobias's results; Phase 1 does not start before that.
+[`phase0-findings.md`](phase0-findings.md)) needs Tobias's results. At Tobias's request ("create it for the real
+version now") Phases 1–8 were built without waiting for them — see the next section.
 
 ### Built
 
@@ -57,3 +58,97 @@ work from the same source of truth).
   that site (and Microsoft Learn); the extraction needs either a session with that domain allowed or a local run.
 - Rollout risk for Phase 8: OfficeDev/office-js issue #6913 (centrally deployed PowerPoint content add-ins not
   opening since a July 2026 update; sideloading unaffected).
+
+---
+
+## Phases 1–8 — full product (built in one pass)
+
+**Status: built and verified in the cloud container; real-PowerPoint verification pending.**
+
+### Decision: phase gate overridden
+
+Principle 9 says not to start Phase 1 before Phase 0 passes. Tobias explicitly asked for the real product, with a
+download and instructions, before running the Phase 0 checklist. Everything PowerPoint-specific therefore follows
+the spec's design plus defensive fallbacks, and is verified only in the browser harness so far:
+
+- slide activation in the slideshow (bound slide id via `SlideRange`, polling, active-view events),
+- per-instance settings in the `.pptx` (key `pulse`), presentation-level deck link via `PowerPoint.run` tags
+  **feature-detected** with a `localStorage` deck registry fallback (the add-in does not depend on `PowerPoint.run`),
+- copy detection on first interaction in the editor plus a heartbeat fallback,
+- presenter view: activation is idempotent server-side, so duplicate instances are harmless by design.
+
+The 30–45 minute [manual-test-protocol.md](manual-test-protocol.md) covers these on Windows and Mac. Findings go into
+this file; anything that contradicts the design gets a fix before classroom use.
+
+### Built
+
+- **Phase 1 — foundations:** pnpm monorepo, `packages/shared` (zod contracts with `zod/mini`, events, DE/EN
+  dictionaries, provisional tokens), Drizzle schema + migrations, Fastify + Socket.IO, HTTPS single-origin dev
+  server, ESLint strict / Prettier / typecheck, `CLAUDE.md`.
+- **Phase 2 — server:** decks, join codes, presenter/participant namespaces, in-memory runtime per deck with a
+  per-deck queue, results aggregation for all types, trailing throttle (presenter ≤ 4/s, phones 1/s), idempotent
+  submissions (`clientResponseId`), reset with generation counter, rate limits, word normalisation.
+- **Phase 3 — participant app:** join (code or `/123456` link), all question types, offline queue, reconnect,
+  quiz flow with nickname/countdown/timer/result/rank, Q&A with upvotes, results on phone, dashboard + export page,
+  `/datenschutz` draft, DE/EN.
+- **Phase 4/5 — add-in:** editor (all slide types, preview, menu, settings, banners, toasts), stage for every type
+  in light/dark (bars, word cloud via `d3-cloud`, scale, quiz phases, leaderboard, Q&A wall, QR via `qrcode`),
+  `OfficeHost` abstraction + harness host, manifest template.
+- **Phase 6 — quiz & Q&A:** server-timed phases with clock offset, scoring by response time, leaderboard cache,
+  Q&A moderation (hide), on-reveal results.
+- **Phase 7 — design:** klu tokens (provisional, see [brand-tokens.md](brand-tokens.md)), Source Sans 3 self-hosted,
+  shape + colour for quiz options, contrast-checked dark theme.
+- **Phase 8 — load, deploy, docs:** load test, Docker/Caddy stack, local one-command setup and launchers, docs.
+
+### Verified here
+
+| Check | Result |
+|---|---|
+| `pnpm typecheck`, `pnpm lint` (strictTypeChecked, 0 warnings), `prettier --check` | clean |
+| Unit + integration (Vitest, 5 files) | 46/46 pass (PGlite; integration suite also run against PostgreSQL 16) |
+| E2E (Playwright: every type, quiz, Q&A, errors; Pixel 5 + iPhone 13 × DE + EN; add-in harness as presenter) | 36/36 pass, twice in a row |
+| Accessibility (axe, join / question / sent / quiz / privacy screens) | no serious or critical violations |
+| Participant bundle | 110.5 kB gz (budget 120 kB); add-in 128.8 kB gz |
+| Load, PostgreSQL, 250 participants | joined in 19.9 s; MC, word cloud (3 each), quiz: **0 lost**, p95 ack **4 ms**, presenter **≤ 4 updates/s**, peak RSS **129 MB** → **PASS** |
+| Load, embedded PGlite | functionally identical, but peak RSS ~609 MB (database in-process) → local mode is for small groups; lectures use PostgreSQL |
+| Docker stack (`infra/docker-compose.yml`) | image builds (382 MB), all services healthy, Caddy HTTPS + security headers (no duplicates), presenter + phone vote round-trip over WSS through Caddy, nightly backup command produces a dump (mode 600) readable by `pg_restore`, no Caddy access log |
+| Local mode (`pnpm setup:local` → `pnpm start`) | `.env` with secrets, dev certificate, build; HTTPS on `localhost:3443` without HSTS; vote round-trip |
+| `pnpm dev` | Vite middleware for both apps, harness loads, no restart loop |
+
+Bugs found while verifying and fixed: `pnpm build` skipped the apps on Linux/macOS (unquoted workspace glob);
+`pnpm dev` restart loop (watcher saw Vite temp files); add-in asset paths in dev; empty env values from Compose
+rejected; e2e/load tests broke when a local `.env` with `DEV_CERTS=true` existed; an axe contrast flake while a
+confirmation was fading in (test now waits for running transitions).
+
+### Deviations from the master prompt
+
+1. **Phase gate** — see above.
+2. **Runtime dependencies beyond §2:** `@electric-sql/pglite` (embedded PostgreSQL so Pulse runs on a laptop
+   without Docker; used only when `DATABASE_URL` is unset), `@fastify/static` (serving the built SPAs),
+   `@fontsource/source-sans-3` (self-hosted font, §11.2). Dev-only: `tsx`, `esbuild`, `office-addin-dev-certs`,
+   `office-addin-dev-settings`, `office-addin-manifest`, `@axe-core/playwright`.
+3. **`zod/mini`** in the shared package and both SPAs (classic zod made the participant bundle 128 kB gz > 120 kB);
+   the server uses classic zod for env/HTTP.
+4. **Schema:** `slide_items.revealed` column (on-reveal state survives restarts); `participants` primary key is
+   `(deck_id, id)`; deleting a deck's data keeps the `decks` row so the add-in can show the retention notice and
+   the join code stays reserved.
+5. **Presenter throttle 260 ms** instead of 250 ms: timer jitter made 250 ms occasionally produce 5 updates in a
+   1-second window; 260 ms keeps the ≤ 4/s criterion with margin.
+6. **Security headers are also set by the server** (local mode has no Caddy). Caddy replaces them (`defer`) in
+   production. No HSTS when `DEV_CERTS=true` (localhost).
+7. **Local mode** (not in the spec): `NODE_ENV=production` + `DEV_CERTS=true` + PGlite on `127.0.0.1:3443`,
+   `Start-Pulse.cmd` / `Start-Pulse.command` launchers, `pnpm setup:local`, `pnpm addin:register`.
+8. **Backups** run in a small `backup` container (busybox `crond` + `pg_dump`) next to the three services.
+
+### Open issues
+
+- **Real PowerPoint verification** on Windows and Mac: [manual-test-protocol.md](manual-test-protocol.md) (and,
+  if time allows, the deeper [phase0-checklist.md](phase0-checklist.md)). The launchers are untested on real
+  Windows/macOS, and add-in registration (`office-addin-dev-settings`) only runs there.
+- **klu tokens** still provisional (kl.ac.at blocked here); `BRAND_LOGO_ENABLED` slot not implemented (no logo is
+  used, which matches the default).
+- **Privacy notice** is a draft with placeholders — DSB review required (noted in deployment.md).
+- **Manifest validation** against Microsoft's online service (`pnpm manifest:validate`) is blocked here; run it
+  once locally.
+- **office-js #6913** (central deployment of content add-ins) — check before a university-wide rollout.
+- Admin-center menu names for the rollout are **[VERIFY]** at rollout time.
