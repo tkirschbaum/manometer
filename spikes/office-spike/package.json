@@ -1,0 +1,19 @@
+{
+  "name": "pulse-office-spike",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Phase 0 throwaway spike: PowerPoint content add-in diagnostics. No dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "certs": "npx --yes office-addin-dev-certs install",
+    "start": "node server.mjs",
+    "start:http": "node server.mjs --http",
+    "manifest": "node make-manifest.mjs",
+    "validate": "npx --yes office-addin-manifest validate manifest.xml",
+    "sideload": "npx --yes office-addin-dev-settings sideload manifest.xml desktop --app PowerPoint",
+    "unregister": "npx --yes office-addin-dev-settings unregister manifest.xml"
+  }
+}

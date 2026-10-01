@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pulse Office Spike</title>
+    <link rel="stylesheet" href="/spike.css" />
+    <script>
+      // Captured before Office.js loads (master prompt §6.9: Office.js may null history methods).
+      window.__spikeBoot = {
+        t0: Date.now(),
+        historyBefore: { pushState: typeof history.pushState, replaceState: typeof history.replaceState },
+        pushStateRef: history.pushState,
+        replaceStateRef: history.replaceState,
+      };
+    </script>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  </head>
+  <body class="view-unknown">
+    <section id="hud" aria-live="polite">
+      <div id="hud-status">Loading</div>
+      <div id="hud-banner" hidden></div>
+      <dl id="hud-grid">
+        <div><dt>Instance</dt><dd id="h-instance">–</dd></div>
+        <div><dt>View</dt><dd id="h-view">–</dd></div>
+        <div><dt>Slide now</dt><dd id="h-current">–</dd></div>
+        <div><dt>Bound slide</dt><dd id="h-bound">–</dd></div>
+        <div><dt>Item</dt><dd id="h-item">–</dd></div>
+        <div><dt>Value</dt><dd id="h-value">–</dd></div>
+        <div><dt>Server</dt><dd id="h-server">–</dd></div>
+        <div><dt>Render</dt><dd id="h-render">–</dd></div>
+        <div class="wide"><dt>Events</dt><dd id="h-events">–</dd></div>
+        <div><dt>Frame</dt><dd id="h-frame">–</dd></div>
+      </dl>
+      <div id="hud-actions">
+        <button id="btn-click-test" type="button">Click test (0)</button>
+        <div id="hover-test">Hover test</div>
+        <button id="btn-toggle-panel" type="button" class="secondary">Panel</button>
+      </div>
+    </section>
+
+    <main id="panel">
+      <section>
+        <h2>T1 Probes and report</h2>
+        <div class="row">
+          <button id="btn-probes" type="button">Run probes</button>
+          <button id="btn-report" type="button" class="secondary">Copy report</button>
+          <button id="btn-browser" type="button" class="secondary">Open logs in browser</button>
+        </div>
+        <div class="row">
+          <input id="marker" placeholder="Marker, e.g. W-4.3 duplicate" size="30" />
+          <button id="btn-marker" type="button" class="secondary">Add marker</button>
+        </div>
+        <textarea id="report-out" rows="6" hidden readonly></textarea>
+        <table id="probe-table"><tbody></tbody></table>
+      </section>
+
+      <section>
+        <h2>T3 Settings (this instance)</h2>
+        <div class="row">
+          <button id="btn-set-write" type="button">Write random value + save</button>
+          <button id="btn-set-read" type="button" class="secondary">Read back</button>
+          <button id="btn-set-big" type="button" class="secondary">Write 50 kB + save</button>
+          <button id="btn-set-big-rm" type="button" class="secondary">Remove 50 kB + save</button>
+          <button id="btn-set-newitem" type="button" class="secondary">New item id + save</button>
+        </div>
+        <pre id="settings-out">–</pre>
+      </section>
+
+      <section>
+        <h2>T4 Slide identity</h2>
+        <div class="row">
+          <button id="btn-slide-read" type="button">Read SlideRange</button>
+          <button id="btn-bind" type="button" class="secondary">Bind / check now</button>
+          <button id="btn-unbind" type="button" class="secondary">Clear binding + save</button>
+          <label><input id="chk-poll" type="checkbox" checked /> Poll every 1 s</label>
+        </div>
+        <pre id="slide-out">–</pre>
+      </section>
+
+      <section>
+        <h2>T5 Document-level store (PowerPoint API)</h2>
+        <div class="row">
+          <button id="btn-tag-w" type="button">Write tag</button>
+          <button id="btn-tag-r" type="button" class="secondary">Read tag</button>
+          <button id="btn-prop-w" type="button">Write custom property</button>
+          <button id="btn-prop-r" type="button" class="secondary">Read custom property</button>
+          <button id="btn-xml-w" type="button">Write custom XML</button>
+          <button id="btn-xml-r" type="button" class="secondary">Read custom XML</button>
+        </div>
+        <p class="hint">Results appear in the T1 table (rows starting with ppt.).</p>
+      </section>
+
+      <section>
+        <h2>T6 localStorage and cross-instance signals</h2>
+        <pre id="ls-out">–</pre>
+        <table id="instances-table">
+          <thead><tr><th>instance</th><th>view</th><th>item</th><th>bound</th><th>now</th><th>on screen</th><th>age</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>T2 Frame size</h2>
+        <div class="row">
+          <label>Slide width pt <input id="slide-w" type="number" value="960" min="1" /></label>
+          <label>Slide height pt <input id="slide-h" type="number" value="540" min="1" /></label>
+          <button id="btn-shapes" type="button">List shapes on this slide</button>
+        </div>
+        <table id="shapes-table"><tbody></tbody></table>
+      </section>
+
+      <section>
+        <h2>T10 Offline / service worker</h2>
+        <div class="row">
+          <button id="btn-sw-reg" type="button">Register service worker</button>
+          <button id="btn-sw-unreg" type="button" class="secondary">Unregister + clear caches</button>
+          <button id="btn-sw-status" type="button" class="secondary">Status</button>
+        </div>
+        <pre id="sw-out">–</pre>
+      </section>
+
+      <section>
+        <h2>Log (newest first)</h2>
+        <pre id="log-out"></pre>
+      </section>
+    </main>
+
+    <script src="/spike.js"></script>
+  </body>
+</html>

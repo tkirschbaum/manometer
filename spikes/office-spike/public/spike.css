@@ -1,0 +1,273 @@
+/* Phase 0 spike styling. Throwaway; not the Pulse design system. */
+:root {
+  --navy: #1b2a4a;
+  --ink: #1a1f2b;
+  --paper: #ffffff;
+  --mist: #eef1f5;
+  --line: #d5dbe3;
+  --on: #0f5c3a;
+  --warn: #8a5a00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font: 13px/1.35 'Segoe UI', -apple-system, system-ui, sans-serif;
+}
+
+button {
+  font: inherit;
+  padding: 5px 10px;
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: var(--paper);
+  color: var(--navy);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+input {
+  font: inherit;
+  padding: 3px 6px;
+  border: 1px solid #9aa5b5;
+  border-radius: 4px;
+}
+
+input[type='number'] {
+  width: 5em;
+}
+
+pre,
+textarea {
+  font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace;
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+}
+
+textarea {
+  width: 100%;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 6px;
+  font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace;
+}
+
+td,
+th {
+  text-align: left;
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  word-break: break-word;
+}
+
+td.ok {
+  color: var(--on);
+  font-weight: 600;
+}
+
+td.fail {
+  color: #8b1d1d;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 14px;
+  margin: 0 0 6px;
+  color: var(--navy);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.hint {
+  margin: 4px 0 0;
+  color: #5b6573;
+}
+
+/* ---- HUD ---------------------------------------------------------------- */
+
+#hud {
+  padding: 8px 12px;
+  background: var(--mist);
+  border-bottom: 1px solid var(--line);
+}
+
+#hud-status {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+#hud-banner {
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: #fff3cd;
+  color: var(--warn);
+  border: 1px solid #e5c76b;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+#hud-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 2px 12px;
+  margin: 6px 0;
+}
+
+#hud-grid div {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+#hud-grid dt {
+  color: #5b6573;
+  flex: none;
+}
+
+#hud-grid dd {
+  margin: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#hud-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#hover-test {
+  padding: 5px 10px;
+  border: 1px dashed var(--navy);
+  border-radius: 4px;
+  user-select: none;
+}
+
+#hover-test.hovered {
+  background: var(--navy);
+  color: #fff;
+}
+
+#panel {
+  padding: 8px 12px 24px;
+  display: grid;
+  gap: 14px;
+}
+
+/* ---- Slideshow (read view): HUD fills the frame and scales with it -------- */
+
+body.view-read #hud {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5vh;
+  padding: 3vh 4vw;
+  border: none;
+  font-size: max(12px, 3.4vh);
+}
+
+body.view-read #hud-status {
+  font-size: max(18px, 13vh);
+  line-height: 1;
+}
+
+body.view-read #hud-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6vh 3vw;
+}
+
+body.view-read #hud-actions button,
+body.view-read #hover-test {
+  font-size: max(12px, 3.4vh);
+  padding: 1vh 2vw;
+}
+
+body.view-read #hud-banner {
+  font-size: max(12px, 3.4vh);
+}
+
+body.view-read #panel {
+  display: none;
+}
+
+body.view-read.show-panel #panel {
+  display: grid;
+}
+
+body.view-read.show-panel #hud {
+  height: auto;
+}
+
+body.view-read.on-screen #hud {
+  background: var(--on);
+  color: #fff;
+}
+
+body.view-read.on-screen #hud-grid dt {
+  color: #cfe7da;
+}
+
+body.view-read.on-screen #hud-actions button.secondary {
+  background: transparent;
+  color: #fff;
+  border-color: #fff;
+}
+
+body.view-read.on-screen #hover-test {
+  border-color: #fff;
+}
+
+body.view-read.on-screen #hover-test.hovered {
+  background: #fff;
+  color: var(--on);
+}
+
+#probe-table td:nth-child(1),
+#probe-table td:nth-child(2),
+#instances-table td,
+#shapes-table td:nth-child(5) {
+  white-space: nowrap;
+}
+
+#hud-grid div.wide {
+  grid-column: 1 / -1;
+}
