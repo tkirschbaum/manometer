@@ -1,0 +1,7 @@
+node_modules
+dist
+pnpm-lock.yaml
+apps/server/src/db/migrations
+docs/master-prompt.md
+spikes
+*.md
