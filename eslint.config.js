@@ -9,6 +9,7 @@ export default tseslint.config(
       '**/dist/**',
       '**/node_modules/**',
       'spikes/**',
+      'apps/*/public/**',
       'apps/server/src/db/migrations/**',
       'playwright-report/**',
       'test-results/**',
