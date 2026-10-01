@@ -1,18 +1,19 @@
-import { z } from 'zod';
+// zod/mini: same validation as classic zod at a fraction of the bundle size (participant budget, §7.3).
+import * as z from 'zod/mini';
 import { LIMITS, QUIZ_TIME_LIMITS } from './constants';
+
+const text = (min: number, max: number) => z.string().check(z.trim(), z.minLength(min), z.maxLength(max));
+const optionalText = (max: number) => z.optional(z.string().check(z.trim(), z.maxLength(max)));
+const intIn = (min: number, max: number) => z.int().check(z.gte(min), z.lte(max));
 
 // ---------------------------------------------------------------------------
 // Primitives
 
 export const uuidSchema = z.uuid();
-export const shortIdSchema = z
-  .string()
-  .min(1)
-  .max(40)
-  .regex(/^[A-Za-z0-9_-]+$/);
-export const joinCodeSchema = z.string().regex(/^\d{6}$/);
+export const shortIdSchema = z.string().check(z.minLength(1), z.maxLength(40), z.regex(/^[A-Za-z0-9_-]+$/));
+export const joinCodeSchema = z.string().check(z.regex(/^\d{6}$/));
 /** 32 random bytes, base64url without padding (§9). */
-export const deckSecretSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+export const deckSecretSchema = z.string().check(z.regex(/^[A-Za-z0-9_-]{43}$/));
 
 export const languageSchema = z.enum(['de', 'en']);
 export type Language = z.output<typeof languageSchema>;
@@ -24,11 +25,11 @@ export type Theme = z.output<typeof themeSchema>;
 // Deck
 
 export const deckSettingsSchema = z.object({
-  title: z.string().trim().max(LIMITS.titleMax).default(''),
-  slideLanguage: languageSchema.default('de'),
-  theme: themeSchema.default('light'),
-  qaEnabled: z.boolean().default(false),
-  showQr: z.boolean().default(true),
+  title: z._default(z.string().check(z.trim(), z.maxLength(LIMITS.titleMax)), ''),
+  slideLanguage: z._default(languageSchema, 'de'),
+  theme: z._default(themeSchema, 'light'),
+  qaEnabled: z._default(z.boolean(), false),
+  showQr: z._default(z.boolean(), true),
 });
 export type DeckSettings = z.output<typeof deckSettingsSchema>;
 
@@ -51,13 +52,13 @@ export type ItemKind = z.output<typeof itemKindSchema>;
 
 export const optionSchema = z.object({
   id: shortIdSchema,
-  label: z.string().trim().min(1).max(LIMITS.optionLabelMax),
+  label: text(1, LIMITS.optionLabelMax),
 });
 export type Option = z.output<typeof optionSchema>;
 
 export const statementSchema = z.object({
   id: shortIdSchema,
-  label: z.string().trim().min(1).max(LIMITS.statementLabelMax),
+  label: text(1, LIMITS.statementLabelMax),
 });
 export type Statement = z.output<typeof statementSchema>;
 
@@ -70,9 +71,9 @@ const itemBase = {
 const questionBase = {
   ...itemBase,
   kind: z.literal('question'),
-  prompt: z.string().trim().min(1).max(LIMITS.promptMax),
-  resultsVisibility: z.enum(['live', 'on_reveal']).default('live'),
-  showOnPhone: z.boolean().default(false),
+  prompt: text(1, LIMITS.promptMax),
+  resultsVisibility: z._default(z.enum(['live', 'on_reveal']), 'live'),
+  showOnPhone: z._default(z.boolean(), false),
 };
 
 function uniqueIds(list: { id: string }[]): boolean {
@@ -83,73 +84,72 @@ export const multipleChoiceConfigSchema = z
   .object({
     ...questionBase,
     type: z.literal('multiple_choice'),
-    options: z.array(optionSchema).min(LIMITS.mcOptionsMin).max(LIMITS.mcOptionsMax),
-    allowMultiple: z.boolean().default(false),
-    maxSelections: z.number().int().min(2).max(LIMITS.mcOptionsMax).optional(),
-    correctOptionIds: z.array(shortIdSchema).max(LIMITS.mcOptionsMax).optional(),
+    options: z.array(optionSchema).check(z.minLength(LIMITS.mcOptionsMin), z.maxLength(LIMITS.mcOptionsMax)),
+    allowMultiple: z._default(z.boolean(), false),
+    maxSelections: z.optional(intIn(2, LIMITS.mcOptionsMax)),
+    correctOptionIds: z.optional(z.array(shortIdSchema).check(z.maxLength(LIMITS.mcOptionsMax))),
   })
-  .superRefine((value, ctx) => {
-    if (!uniqueIds(value.options)) ctx.addIssue({ code: 'custom', message: 'Duplicate option id', path: ['options'] });
-    if (value.maxSelections !== undefined && value.maxSelections > value.options.length) {
-      ctx.addIssue({ code: 'custom', message: 'maxSelections exceeds options', path: ['maxSelections'] });
-    }
-    const ids = new Set(value.options.map((o) => o.id));
-    if (value.correctOptionIds?.some((id) => !ids.has(id))) {
-      ctx.addIssue({ code: 'custom', message: 'Unknown correct option', path: ['correctOptionIds'] });
-    }
-  });
+  .check(
+    z.superRefine((value, ctx) => {
+      if (!uniqueIds(value.options))
+        ctx.addIssue({ code: 'custom', message: 'Duplicate option id', path: ['options'] });
+      if (value.maxSelections !== undefined && value.maxSelections > value.options.length) {
+        ctx.addIssue({ code: 'custom', message: 'maxSelections exceeds options', path: ['maxSelections'] });
+      }
+      const ids = new Set(value.options.map((o) => o.id));
+      if (value.correctOptionIds?.some((id) => !ids.has(id))) {
+        ctx.addIssue({ code: 'custom', message: 'Unknown correct option', path: ['correctOptionIds'] });
+      }
+    }),
+  );
 
 export const wordCloudConfigSchema = z.object({
   ...questionBase,
   type: z.literal('word_cloud'),
-  entriesPerParticipant: z.union([z.literal(1), z.literal(2), z.literal(3)]).default(3),
+  entriesPerParticipant: z._default(z.literal([1, 2, 3]), 3),
 });
 
 export const openTextConfigSchema = z.object({
   ...questionBase,
   type: z.literal('open_text'),
-  entriesPerParticipant: z.number().int().min(1).max(LIMITS.openTextEntriesMax).default(1),
+  entriesPerParticipant: z._default(intIn(1, LIMITS.openTextEntriesMax), 1),
 });
 
 export const scaleConfigSchema = z
   .object({
     ...questionBase,
     type: z.literal('scale'),
-    statements: z.array(statementSchema).min(LIMITS.statementsMin).max(LIMITS.statementsMax),
-    range: z.union([z.literal(5), z.literal(10)]).default(5),
-    minLabel: z.string().trim().max(LIMITS.scaleLabelMax).optional(),
-    maxLabel: z.string().trim().max(LIMITS.scaleLabelMax).optional(),
+    statements: z.array(statementSchema).check(z.minLength(LIMITS.statementsMin), z.maxLength(LIMITS.statementsMax)),
+    range: z._default(z.literal([5, 10]), 5),
+    minLabel: optionalText(LIMITS.scaleLabelMax),
+    maxLabel: optionalText(LIMITS.scaleLabelMax),
   })
-  .superRefine((value, ctx) => {
-    if (!uniqueIds(value.statements)) {
-      ctx.addIssue({ code: 'custom', message: 'Duplicate statement id', path: ['statements'] });
-    }
-  });
-
-const quizTimeLimitSchema = z.union(QUIZ_TIME_LIMITS.map((n) => z.literal(n)) as [
-  z.ZodLiteral<10>,
-  z.ZodLiteral<15>,
-  z.ZodLiteral<20>,
-  z.ZodLiteral<30>,
-  z.ZodLiteral<45>,
-  z.ZodLiteral<60>,
-]);
+  .check(
+    z.superRefine((value, ctx) => {
+      if (!uniqueIds(value.statements)) {
+        ctx.addIssue({ code: 'custom', message: 'Duplicate statement id', path: ['statements'] });
+      }
+    }),
+  );
 
 export const quizConfigSchema = z
   .object({
     ...questionBase,
     type: z.literal('quiz'),
-    options: z.array(optionSchema).min(LIMITS.quizOptionsMin).max(LIMITS.quizOptionsMax),
+    options: z.array(optionSchema).check(z.minLength(LIMITS.quizOptionsMin), z.maxLength(LIMITS.quizOptionsMax)),
     correctOptionId: shortIdSchema,
-    timeLimitSec: quizTimeLimitSchema.default(20),
-    startMode: z.enum(['auto', 'click']).default('auto'),
+    timeLimitSec: z._default(z.literal(QUIZ_TIME_LIMITS), 20),
+    startMode: z._default(z.enum(['auto', 'click']), 'auto'),
   })
-  .superRefine((value, ctx) => {
-    if (!uniqueIds(value.options)) ctx.addIssue({ code: 'custom', message: 'Duplicate option id', path: ['options'] });
-    if (!value.options.some((o) => o.id === value.correctOptionId)) {
-      ctx.addIssue({ code: 'custom', message: 'Correct option missing', path: ['correctOptionId'] });
-    }
-  });
+  .check(
+    z.superRefine((value, ctx) => {
+      if (!uniqueIds(value.options))
+        ctx.addIssue({ code: 'custom', message: 'Duplicate option id', path: ['options'] });
+      if (!value.options.some((o) => o.id === value.correctOptionId)) {
+        ctx.addIssue({ code: 'custom', message: 'Correct option missing', path: ['correctOptionId'] });
+      }
+    }),
+  );
 
 export const questionConfigSchema = z.discriminatedUnion('type', [
   multipleChoiceConfigSchema,
@@ -188,21 +188,21 @@ export type ItemState = z.output<typeof itemStateSchema>;
 export const publicItemViewSchema = z.object({
   id: uuidSchema,
   kind: itemKindSchema,
-  type: questionTypeSchema.nullable(),
+  type: z.nullable(questionTypeSchema),
   prompt: z.string(),
   state: itemStateSchema,
   revealed: z.boolean(),
-  phaseEndsAt: z.number().nullable(),
+  phaseEndsAt: z.nullable(z.number()),
   options: z.array(optionSchema),
   allowMultiple: z.boolean(),
-  maxSelections: z.number().int().nullable(),
-  entriesPerParticipant: z.number().int(),
+  maxSelections: z.nullable(z.int()),
+  entriesPerParticipant: z.int(),
   statements: z.array(statementSchema),
-  range: z.number().int(),
-  minLabel: z.string().nullable(),
-  maxLabel: z.string().nullable(),
-  timeLimitSec: z.number().int().nullable(),
-  correctOptionIds: z.array(shortIdSchema).nullable(),
+  range: z.int(),
+  minLabel: z.nullable(z.string()),
+  maxLabel: z.nullable(z.string()),
+  timeLimitSec: z.nullable(z.int()),
+  correctOptionIds: z.nullable(z.array(shortIdSchema)),
   showOnPhone: z.boolean(),
 });
 export type PublicItemView = z.output<typeof publicItemViewSchema>;
@@ -212,19 +212,19 @@ export type PublicItemView = z.output<typeof publicItemViewSchema>;
 
 export const multipleChoicePayloadSchema = z.object({
   type: z.literal('multiple_choice'),
-  optionIds: z.array(shortIdSchema).min(1).max(LIMITS.mcOptionsMax),
+  optionIds: z.array(shortIdSchema).check(z.minLength(1), z.maxLength(LIMITS.mcOptionsMax)),
 });
 export const wordCloudPayloadSchema = z.object({
   type: z.literal('word_cloud'),
-  text: z.string().max(LIMITS.wordInputMax),
+  text: z.string().check(z.maxLength(LIMITS.wordInputMax)),
 });
 export const openTextPayloadSchema = z.object({
   type: z.literal('open_text'),
-  text: z.string().trim().min(1).max(LIMITS.textMax),
+  text: text(1, LIMITS.textMax),
 });
 export const scalePayloadSchema = z.object({
   type: z.literal('scale'),
-  ratings: z.record(shortIdSchema, z.number().int().min(1).max(10)),
+  ratings: z.record(shortIdSchema, intIn(1, 10)),
 });
 export const quizPayloadSchema = z.object({
   type: z.literal('quiz'),
@@ -242,18 +242,18 @@ export type ResponsePayload = z.output<typeof responsePayloadSchema>;
 export const quizResultSchema = z.object({
   itemId: uuidSchema,
   /** null: the participant did not answer. */
-  correct: z.boolean().nullable(),
-  points: z.number().int(),
-  totalPoints: z.number().int(),
-  rank: z.number().int().nullable(),
-  rankOf: z.number().int(),
+  correct: z.nullable(z.boolean()),
+  points: z.int(),
+  totalPoints: z.int(),
+  rank: z.nullable(z.int()),
+  rankOf: z.int(),
 });
 export type QuizResult = z.output<typeof quizResultSchema>;
 
 export const myResponseStateSchema = z.object({
   itemId: uuidSchema,
   submissions: z.array(responsePayloadSchema),
-  quizResult: quizResultSchema.nullable(),
+  quizResult: z.nullable(quizResultSchema),
 });
 export type MyResponseState = z.output<typeof myResponseStateSchema>;
 
@@ -263,17 +263,17 @@ export type MyResponseState = z.output<typeof myResponseStateSchema>;
 const resultsBase = {
   itemId: uuidSchema,
   /** Distinct participants who answered. */
-  respondents: z.number().int(),
+  respondents: z.int(),
   /** Visible responses (word cloud / open text can have several per participant). */
-  responses: z.number().int(),
+  responses: z.int(),
 };
 
 export const resultsViewSchema = z.discriminatedUnion('type', [
-  z.object({ ...resultsBase, type: z.literal('multiple_choice'), counts: z.record(z.string(), z.number().int()) }),
+  z.object({ ...resultsBase, type: z.literal('multiple_choice'), counts: z.record(z.string(), z.int()) }),
   z.object({
     ...resultsBase,
     type: z.literal('word_cloud'),
-    words: z.array(z.object({ key: z.string(), text: z.string(), count: z.number().int() })),
+    words: z.array(z.object({ key: z.string(), text: z.string(), count: z.int() })),
   }),
   z.object({
     ...resultsBase,
@@ -286,25 +286,25 @@ export const resultsViewSchema = z.discriminatedUnion('type', [
     statements: z.array(
       z.object({
         id: z.string(),
-        n: z.number().int(),
-        average: z.number().nullable(),
-        histogram: z.array(z.number().int()),
+        n: z.int(),
+        average: z.nullable(z.number()),
+        histogram: z.array(z.int()),
       }),
     ),
   }),
-  z.object({ ...resultsBase, type: z.literal('quiz'), counts: z.record(z.string(), z.number().int()) }),
+  z.object({ ...resultsBase, type: z.literal('quiz'), counts: z.record(z.string(), z.int()) }),
 ]);
 export type ResultsView = z.output<typeof resultsViewSchema>;
 
 export const leaderboardEntrySchema = z.object({
-  rank: z.number().int(),
+  rank: z.int(),
   nickname: z.string(),
-  points: z.number().int(),
+  points: z.int(),
 });
 export const leaderboardViewSchema = z.object({
   entries: z.array(leaderboardEntrySchema),
-  players: z.number().int(),
-  quizCount: z.number().int(),
+  players: z.int(),
+  quizCount: z.int(),
 });
 export type LeaderboardView = z.output<typeof leaderboardViewSchema>;
 
@@ -314,7 +314,7 @@ export type LeaderboardView = z.output<typeof leaderboardViewSchema>;
 export const qaItemViewSchema = z.object({
   id: uuidSchema,
   text: z.string(),
-  upvotes: z.number().int(),
+  upvotes: z.int(),
   answered: z.boolean(),
   createdAt: z.number(),
 });
@@ -322,6 +322,12 @@ export type QaItemView = z.output<typeof qaItemViewSchema>;
 
 export const qaListSchema = z.object({ items: z.array(qaItemViewSchema) });
 export type QaList = z.output<typeof qaListSchema>;
+
+export const qaMineSchema = z.object({ mine: z.array(uuidSchema), voted: z.array(uuidSchema) });
+export type QaMine = z.output<typeof qaMineSchema>;
+
+export const meSchema = z.object({ nickname: z.nullable(z.string()) });
+export type Me = z.output<typeof meSchema>;
 
 // ---------------------------------------------------------------------------
 // Deck state messages
@@ -332,9 +338,9 @@ export const presenterDeckStateSchema = z.object({
   /** True when this connection created the deck (new deck, or recreated after retention). */
   created: z.boolean(),
   settings: deckSettingsSchema,
-  activeItemId: uuidSchema.nullable(),
+  activeItemId: z.nullable(uuidSchema),
   publicBaseUrl: z.string(),
-  retentionDays: z.number().int(),
+  retentionDays: z.int(),
   serverNow: z.number(),
 });
 export type PresenterDeckState = z.output<typeof presenterDeckStateSchema>;
@@ -343,14 +349,14 @@ export const itemStateMessageSchema = z.object({
   itemId: uuidSchema,
   state: itemStateSchema,
   revealed: z.boolean(),
-  phaseEndsAt: z.number().nullable(),
+  phaseEndsAt: z.nullable(z.number()),
   serverNow: z.number(),
 });
 export type ItemStateMessage = z.output<typeof itemStateMessageSchema>;
 
 export const participantDeckStateSchema = z.object({
   deck: z.object({ title: z.string(), slideLanguage: languageSchema, qaEnabled: z.boolean() }),
-  activeItem: publicItemViewSchema.nullable(),
+  activeItem: z.nullable(publicItemViewSchema),
   serverNow: z.number(),
 });
 export type ParticipantDeckState = z.output<typeof participantDeckStateSchema>;

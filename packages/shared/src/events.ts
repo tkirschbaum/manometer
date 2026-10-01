@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod/mini';
 import { LIMITS } from './constants';
 import {
   deckSecretSchema,
@@ -11,6 +11,8 @@ import {
   type Ack,
   type ItemState,
   type ItemStateMessage,
+  type Me,
+  type QaMine,
   type LeaderboardView,
   type MyResponseState,
   type ParticipantDeckState,
@@ -36,12 +38,12 @@ export const deckUpsertSchema = z.object({ settings: deckSettingsSchema });
 export const itemRefSchema = z.object({ itemId: uuidSchema });
 export const itemActivateSchema = z.object({ itemId: uuidSchema, config: slideItemConfigSchema });
 export const responseHideSchema = z.union([
-  z.object({ itemId: uuidSchema, responseId: z.string().regex(/^\d{1,18}$/) }),
-  z.object({ itemId: uuidSchema, wordKey: z.string().min(1).max(LIMITS.wordMax) }),
+  z.object({ itemId: uuidSchema, responseId: z.string().check(z.regex(/^\d{1,18}$/)) }),
+  z.object({ itemId: uuidSchema, wordKey: z.string().check(z.minLength(1), z.maxLength(LIMITS.wordMax)) }),
 ]);
 export const qaRefSchema = z.object({ qaItemId: uuidSchema });
 export const qaAnsweredSchema = z.object({ qaItemId: uuidSchema, answered: z.boolean() });
-export const emptySchema = z.object({}).strict();
+export const emptySchema = z.strictObject({});
 
 export interface ItemSnapshot {
   state: ItemState;
@@ -86,10 +88,10 @@ export const responseSubmitSchema = z.object({
 });
 export const qaSubmitSchema = z.object({
   clientQaId: uuidSchema,
-  text: z.string().trim().min(1).max(LIMITS.qaMax),
+  text: z.string().check(z.trim(), z.minLength(1), z.maxLength(LIMITS.qaMax)),
 });
 export const nicknameSchema = z.object({
-  nickname: z.string().trim().min(LIMITS.nicknameMin).max(LIMITS.nicknameMax),
+  nickname: z.string().check(z.trim(), z.minLength(LIMITS.nicknameMin), z.maxLength(LIMITS.nicknameMax)),
 });
 export const optionRefSchema = z.object({ optionId: shortIdSchema });
 
@@ -104,11 +106,11 @@ export interface ParticipantClientEvents {
 
 export interface ParticipantServerEvents {
   'deck:state': (state: ParticipantDeckState) => void;
-  me: (payload: { nickname: string | null }) => void;
+  me: (payload: Me) => void;
   'results:update': (results: ResultsView) => void;
   'quiz:result': (result: QuizResult) => void;
   'qa:update': (payload: QaList) => void;
-  'qa:mine': (payload: { mine: string[]; voted: string[] }) => void;
+  'qa:mine': (payload: QaMine) => void;
 }
 
 // ---------------------------------------------------------------------------

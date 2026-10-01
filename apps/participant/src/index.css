@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+@import '@fontsource/source-sans-3/latin-400.css';
+@import '@fontsource/source-sans-3/latin-600.css';
+@import '@fontsource/source-sans-3/latin-700.css';
+
+/*
+ * Design tokens (master prompt §11). PROVISIONAL values from §11.1 step 4 until the klu tokens are
+ * extracted (see docs/brand-tokens.md). Keep in sync with packages/shared/src/tokens.ts.
+ */
+@theme {
+  --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  --color-navy: #1b2a4a;
+  --color-navy-soft: #2c3d63;
+  --color-red: #c8102e;
+  --color-ink: #1a1f2b;
+  --color-paper: #ffffff;
+  --color-mist: #eef1f5;
+  --color-line: #d5dbe3;
+  --color-muted: #5b6573;
+  --color-teal: #1f6f6b;
+  --color-ochre: #8f6410;
+  --radius-brand: 6px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    font-size: 18px;
+    line-height: 1.45;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-red);
+    outline-offset: 2px;
+  }
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.breathing {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fade-in 250ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathing,
+  .fade-in {
+    animation: none;
+  }
+  * {
+    transition-duration: 0ms !important;
+  }
+}

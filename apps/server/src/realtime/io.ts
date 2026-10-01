@@ -26,7 +26,7 @@ import {
   type Untrusted,
 } from '@pulse/shared';
 import { Server, type Namespace, type Socket } from 'socket.io';
-import type { z } from 'zod';
+import type * as z from 'zod/mini';
 import { SlidingWindowLimiter } from '../domain/rateLimit';
 import { isHubError, toAck, type Broadcaster, type Hub, type HubLogger } from './hub';
 
@@ -130,7 +130,7 @@ function errorCode(error: unknown): string {
 }
 
 /** Validates the payload with zod, runs the handler and always acks (if the client asked for an ack). */
-function bind<S extends z.ZodType, R extends object>(
+function bind<S extends z.ZodMiniType, R extends object>(
   socket: Socket,
   event: string,
   schema: S,
