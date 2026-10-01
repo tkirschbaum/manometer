@@ -43,6 +43,9 @@
     ls: null,
     showPanel: false,
     firstInteractionDone: false,
+    config: null,
+    readyAt: 0,
+    autoReadDone: false,
   };
 
   // -------------------------------------------------------------------------
@@ -407,6 +410,10 @@
     state.view = view;
     log('view', { view: view, prev: prev, trigger: trigger, bound: state.settings ? state.settings.boundSlideId : null });
     evaluateOnScreen('view:' + trigger);
+    if (view === 'read' && state.config && state.config.auto && !state.autoReadDone) {
+      state.autoReadDone = true;
+      setTimeout(runProbes, 1500);
+    }
   }
 
   function refreshView(trigger) {
@@ -1152,6 +1159,115 @@
   }
 
   // -------------------------------------------------------------------------
+  // Unattended mode (server started with --auto, used by automation/). Nobody can
+  // click inside the frame from a script, so the instance does on load what the
+  // checklist does by hand: bind, write a value, probe, fill the document stores.
+
+  function fetchConfig() {
+    return fetch('/config.json', { cache: 'no-store' })
+      .then(function (res) {
+        return res.ok ? res.json() : {};
+      })
+      .catch(function () {
+        return {};
+      })
+      .then(function (cfg) {
+        state.config = cfg || {};
+        log('config', state.config);
+        return state.config;
+      });
+  }
+
+  function delay(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  // Two identical single-slide reads 600 ms apart while the page is visible.
+  function stableSlide() {
+    var attempts = 0;
+    function attempt() {
+      return readSlide('auto').then(function (a) {
+        return delay(600)
+          .then(function () {
+            return readSlide('auto');
+          })
+          .then(function (b) {
+            if (a !== null && a === b && document.visibilityState === 'visible') return a;
+            attempts += 1;
+            return attempts < 5 ? attempt() : null;
+          });
+      });
+    }
+    return attempt();
+  }
+
+  function probeResult(name) {
+    var p = state.probes[name];
+    return p ? p.result : null;
+  }
+
+  function fillDocumentStores() {
+    var tag = probeResult('ppt.tag.read');
+    var prop = probeResult('ppt.customProperty.read');
+    var xml = probeResult('ppt.customXml.read');
+    var chain = Promise.resolve();
+    if (tag && tag.ok && tag.value && tag.value.found === false) {
+      chain = chain.then(function () { return ppt('ppt.tag.write', writeTag); });
+    }
+    if (prop && prop.ok && prop.value && prop.value.found === false) {
+      chain = chain.then(function () { return ppt('ppt.customProperty.write', writeProp); });
+    }
+    if (xml && xml.ok && xml.value && xml.value.count === 0) {
+      chain = chain.then(function () { return ppt('ppt.customXml.write', writeXml); });
+    }
+    return chain;
+  }
+
+  function autoRun() {
+    log('auto.start', { view: state.view, config: state.config });
+    var chain = Promise.resolve();
+    if (state.view === 'edit') {
+      chain = chain
+        .then(stableSlide)
+        .then(function (stable) {
+          if (stable === null) {
+            log('auto.skip', { reason: 'no stable single slide' });
+            return;
+          }
+          if (Date.now() - state.readyAt > 12000) {
+            log('auto.skip', { reason: 'more than 12 s after load', afterMs: Date.now() - state.readyAt });
+            return;
+          }
+          return bindCheck('auto');
+        })
+        .then(function () {
+          var s = state.settings;
+          if (!s || (s.value && state.config.autoWrite !== 'always')) return;
+          return saveSettings(
+            'auto.write',
+            Object.assign({}, s, { value: randomValue(), valueWrittenAt: new Date().toISOString(), valueWrittenBy: SHORT }),
+          );
+        });
+    } else if (state.view === 'read') {
+      state.autoReadDone = true;
+    }
+    return chain
+      .then(runProbes)
+      .then(function () {
+        if (state.view === 'edit') return fillDocumentStores();
+      })
+      .then(function () {
+        if (state.config.sw === 'register') return swRegister();
+        if (state.config.sw === 'unregister') return swUnregister();
+      })
+      .then(function () {
+        log('auto.done', { view: state.view, bound: state.settings ? state.settings.boundSlideId : null });
+      });
+  }
+
+  // -------------------------------------------------------------------------
   // Wiring
 
   function on(id, handler) {
@@ -1371,6 +1487,7 @@
 
   function onOfficeReady(info) {
     state.officeReady = true;
+    state.readyAt = Date.now();
     state.host = info ? info.host : null;
     state.platform = info ? info.platform : null;
     var diag = Office.context && Office.context.diagnostics;
@@ -1418,7 +1535,9 @@
       })
       .then(function () { return readSlide('load'); })
       .then(function () { return bindCheck('load'); })
-      .then(function () {
+      .then(fetchConfig)
+      .then(function (cfg) {
+        if (cfg.auto) return autoRun();
         probeRequirementSets();
         return swStatus();
       })

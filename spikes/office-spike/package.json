@@ -14,6 +14,8 @@
     "manifest": "node make-manifest.mjs",
     "validate": "npx --yes office-addin-manifest validate manifest.xml",
     "sideload": "npx --yes office-addin-dev-settings sideload manifest.xml desktop --app PowerPoint",
-    "unregister": "npx --yes office-addin-dev-settings unregister manifest.xml"
+    "unregister": "npx --yes office-addin-dev-settings unregister manifest.xml",
+    "start:auto": "node server.mjs --auto",
+    "register": "npx --yes office-addin-dev-settings register manifest.xml"
   }
 }

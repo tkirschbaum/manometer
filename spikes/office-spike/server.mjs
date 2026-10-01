@@ -3,6 +3,7 @@
 //
 //   node server.mjs           HTTPS on https://localhost:3443 using office-addin-dev-certs
 //   node server.mjs --http    plain HTTP on http://localhost:3080 (only behind a cloudflared quick tunnel)
+//   node server.mjs --auto    unattended mode for automation/ (instances bind, write and probe on load)
 //
 // Serves public/ and collects log entries from every spike instance (POST /log), so
 // that instances you cannot see (presenter view, next-slide preview, other slides)
@@ -25,6 +26,13 @@ const PUBLIC_DIR = join(here, 'public');
 const LOG_DIR = join(here, 'logs');
 const MAX_BODY = 512 * 1024;
 const MAX_ENTRIES = 50_000;
+
+// Read by every spike instance on load (GET /config.json); automation changes it at runtime (POST /config.json).
+const config = {
+  auto: process.argv.includes('--auto'),
+  autoWrite: 'ifEmpty', // 'ifEmpty' | 'always': when an auto instance writes a new settings value
+  sw: null, // null | 'register' | 'unregister': service worker action for auto instances
+};
 
 mkdirSync(LOG_DIR, { recursive: true });
 const startedAt = new Date();
@@ -135,6 +143,20 @@ async function postMarker(req, res) {
   if (!text) return json(res, 400, { ok: false });
   const stored = addEntry({ src: 'viewer', nonce: 'marker', kind: 'marker', data: { text } });
   return json(res, 200, { ok: true, seq: stored.seq });
+}
+
+async function postConfig(req, res) {
+  let parsed;
+  try {
+    parsed = JSON.parse(await readBody(req));
+  } catch {
+    return json(res, 400, { ok: false });
+  }
+  if (typeof parsed.auto === 'boolean') config.auto = parsed.auto;
+  if (parsed.autoWrite === 'ifEmpty' || parsed.autoWrite === 'always') config.autoWrite = parsed.autoWrite;
+  if (parsed.sw === null || parsed.sw === 'register' || parsed.sw === 'unregister') config.sw = parsed.sw;
+  addEntry({ src: 'server', nonce: 'server', kind: 'config', data: { ...config } });
+  return json(res, 200, { ok: true, config });
 }
 
 function serveStatic(req, res, pathname) {
@@ -297,8 +319,10 @@ async function handle(req, res) {
   try {
     if (req.method === 'POST' && pathname === '/log') return await postLog(req, res);
     if (req.method === 'POST' && pathname === '/logs/marker') return await postMarker(req, res);
+    if (req.method === 'POST' && pathname === '/config.json') return await postConfig(req, res);
     if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'text/plain; charset=utf-8', 'Method not allowed');
     if (pathname === '/ping') return json(res, 200, { ok: true, t: Date.now() });
+    if (pathname === '/config.json') return json(res, 200, config);
     if (pathname === '/logs') return send(res, 200, TYPES['.html'], VIEWER);
     if (pathname === '/logs.json') {
       const since = Number(url.searchParams.get('since') ?? 0);
@@ -347,9 +371,9 @@ for (const host of ['127.0.0.1', '::1']) {
 }
 
 const scheme = useHttp ? 'http' : 'https';
-console.log(`Spike server on ${scheme}://localhost:${PORT}`);
+console.log(`Spike server on ${scheme}://localhost:${PORT}${config.auto ? ' (auto mode)' : ''}`);
 console.log(`  add-in page   ${scheme}://localhost:${PORT}/index.html`);
 console.log(`  log viewer    ${scheme}://localhost:${PORT}/logs`);
 console.log(`  report        ${scheme}://localhost:${PORT}/report.md`);
 console.log(`  log file      ${logFile}`);
-addEntry({ src: 'server', nonce: 'server', kind: 'server.start', data: { port: PORT, scheme } });
+addEntry({ src: 'server', nonce: 'server', kind: 'server.start', data: { port: PORT, scheme, config } });
