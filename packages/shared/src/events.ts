@@ -104,7 +104,7 @@ export interface ParticipantClientEvents {
 
 export interface ParticipantServerEvents {
   'deck:state': (state: ParticipantDeckState) => void;
-  'item:state': (payload: ItemStateMessage) => void;
+  me: (payload: { nickname: string | null }) => void;
   'results:update': (results: ResultsView) => void;
   'quiz:result': (result: QuizResult) => void;
   'qa:update': (payload: QaList) => void;

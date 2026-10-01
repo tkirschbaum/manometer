@@ -334,6 +334,7 @@ export const presenterDeckStateSchema = z.object({
   settings: deckSettingsSchema,
   activeItemId: uuidSchema.nullable(),
   publicBaseUrl: z.string(),
+  retentionDays: z.number().int(),
   serverNow: z.number(),
 });
 export type PresenterDeckState = z.output<typeof presenterDeckStateSchema>;
@@ -350,7 +351,6 @@ export type ItemStateMessage = z.output<typeof itemStateMessageSchema>;
 export const participantDeckStateSchema = z.object({
   deck: z.object({ title: z.string(), slideLanguage: languageSchema, qaEnabled: z.boolean() }),
   activeItem: publicItemViewSchema.nullable(),
-  nickname: z.string().nullable(),
   serverNow: z.number(),
 });
 export type ParticipantDeckState = z.output<typeof participantDeckStateSchema>;

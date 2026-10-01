@@ -21,7 +21,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.mjs', '*.ts', 'scripts/*.mjs', 'apps/*/*.ts', 'apps/*/*.mjs'],
+          allowDefaultProject: ['*.js', '*.mjs', '*.ts', 'scripts/*.mjs', 'apps/*/*.mjs'],
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 40,
         },
         tsconfigRootDir: import.meta.dirname,
