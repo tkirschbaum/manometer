@@ -26,7 +26,10 @@ export function PhoneResults({ item, results }: { item: PublicItemView; results:
                   </span>
                 </div>
                 <div className="mt-1 h-2.5 rounded-full bg-mist">
-                  <div className="h-2.5 rounded-full bg-navy transition-[width] duration-400 ease-out" style={{ width: `${pct}%` }} />
+                  <div
+                    className="h-2.5 rounded-full bg-navy transition-[width] duration-400 ease-out"
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
               </li>
             );

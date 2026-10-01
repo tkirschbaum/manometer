@@ -168,7 +168,10 @@ export function Editor({
               }
             }}
           >
-            <span className={`inline-block size-2 rounded-full ${connected ? 'bg-red' : 'bg-line'}`} aria-hidden="true" />
+            <span
+              className={`inline-block size-2 rounded-full ${connected ? 'bg-red' : 'bg-line'}`}
+              aria-hidden="true"
+            />
             <span className="tabular">
               {t('stage.code')} {formatJoinCode(deck.joinCode)}
             </span>
@@ -355,7 +358,10 @@ export function Editor({
         )}
       </main>
 
-      <footer className="flex flex-none items-center gap-2 border-t border-line px-3 py-1.5 text-[12px] text-muted" role="status">
+      <footer
+        className="flex flex-none items-center gap-2 border-t border-line px-3 py-1.5 text-[12px] text-muted"
+        role="status"
+      >
         <span className="min-w-0 truncate">{status}</span>
       </footer>
 
@@ -387,12 +393,25 @@ export function Editor({
   );
 }
 
-function Banner({ children, onClose, closeLabel }: { children: React.ReactNode; onClose?: () => void; closeLabel?: string }) {
+function Banner({
+  children,
+  onClose,
+  closeLabel,
+}: {
+  children: React.ReactNode;
+  onClose?: () => void;
+  closeLabel?: string;
+}) {
   return (
     <div className="flex flex-none items-start gap-2 border-b border-line bg-mist px-3 py-1.5" role="status">
       <p className="min-w-0 flex-1">{children}</p>
       {onClose ? (
-        <button type="button" onClick={onClose} className="shrink-0 font-semibold text-navy underline" aria-label={closeLabel}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 font-semibold text-navy underline"
+          aria-label={closeLabel}
+        >
           {closeLabel}
         </button>
       ) : null}

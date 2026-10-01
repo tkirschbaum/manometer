@@ -40,7 +40,12 @@ interface ParticipantData {
   initial?: { state: ParticipantDeckState; nickname: string | null };
 }
 
-type PresenterNamespace = Namespace<Untrusted<PresenterClientEvents>, PresenterServerEvents, Record<string, never>, PresenterData>;
+type PresenterNamespace = Namespace<
+  Untrusted<PresenterClientEvents>,
+  PresenterServerEvents,
+  Record<string, never>,
+  PresenterData
+>;
 type ParticipantNamespace = Namespace<
   Untrusted<ParticipantClientEvents>,
   ParticipantServerEvents,
@@ -197,7 +202,11 @@ function attachPresenters(nsp: PresenterNamespace, hub: Hub, logger: HubLogger):
     bind(socket, 'item:reopen', itemRefSchema, logger, (d) => hub.itemReopen(deckId, d.itemId));
     bind(socket, 'item:reset', itemRefSchema, logger, (d) => hub.itemReset(deckId, d.itemId));
     bind(socket, 'response:hide', responseHideSchema, logger, async (d) => {
-      await hub.hideResponse(deckId, d.itemId, 'responseId' in d ? { responseId: Number(d.responseId) } : { wordKey: d.wordKey });
+      await hub.hideResponse(
+        deckId,
+        d.itemId,
+        'responseId' in d ? { responseId: Number(d.responseId) } : { wordKey: d.wordKey },
+      );
       return {};
     });
     bind(socket, 'qa:hide', qaRefSchema, logger, async (d) => {

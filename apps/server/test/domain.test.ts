@@ -55,7 +55,15 @@ describe('word normalisation', () => {
   });
 
   it('displays the most frequent casing', () => {
-    expect(displayForm(new Map([['herz', 1], ['Herz', 3], ['HERZ', 1]]))).toBe('Herz');
+    expect(
+      displayForm(
+        new Map([
+          ['herz', 1],
+          ['Herz', 3],
+          ['HERZ', 1],
+        ]),
+      ),
+    ).toBe('Herz');
   });
 });
 
@@ -83,7 +91,13 @@ describe('join codes', () => {
     const tryInsert = vi.fn((code: string) => Promise.resolve(!taken.has(code)));
     await expect(allocateJoinCode(tryInsert, () => codes.shift() ?? '999999')).resolves.toBe('730582');
     expect(tryInsert).toHaveBeenCalledTimes(3);
-    await expect(allocateJoinCode(() => Promise.resolve(false), () => '482913', 3)).rejects.toThrow();
+    await expect(
+      allocateJoinCode(
+        () => Promise.resolve(false),
+        () => '482913',
+        3,
+      ),
+    ).rejects.toThrow();
   });
 });
 
@@ -204,6 +218,9 @@ describe('rate limit and time', () => {
     expect(isoInZone(new Date('2026-07-01T10:00:00Z'), 'Europe/Vienna')).toBe('2026-07-01T12:00:00+02:00');
     expect(isoInZone(new Date('2026-12-01T10:00:00Z'), 'Europe/Vienna')).toBe('2026-12-01T11:00:00+01:00');
     expect(isoInZone(new Date('2026-12-01T10:00:00Z'), 'UTC')).toBe('2026-12-01T10:00:00+00:00');
-    expect(localClock(new Date('2026-12-01T02:31:00Z'), 'Europe/Vienna')).toEqual({ day: '2026-12-01', minutes: 3 * 60 + 31 });
+    expect(localClock(new Date('2026-12-01T02:31:00Z'), 'Europe/Vienna')).toEqual({
+      day: '2026-12-01',
+      minutes: 3 * 60 + 31,
+    });
   });
 });

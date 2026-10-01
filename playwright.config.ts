@@ -41,6 +41,10 @@ export default defineConfig({
       PARTICIPANT_HASH_SALT: 'e2e-participant-salt',
       PGLITE_DIR: 'memory://',
       LOG_LEVEL: 'warn',
+      // Plain HTTP even when a local-mode .env (DEV_CERTS=true) exists.
+      DEV_CERTS: 'false',
+      TLS_CERT_FILE: '',
+      TLS_KEY_FILE: '',
     },
   },
 });

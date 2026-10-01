@@ -27,6 +27,10 @@ const server = spawn('node', ['apps/server/dist/index.js'], {
     PARTICIPANT_HASH_SALT: 'load-test-participant-salt',
     PGLITE_DIR: process.env.DATABASE_URL ? '.data/unused' : 'memory://',
     LOG_LEVEL: 'warn',
+    // Plain HTTP even when a local-mode .env (DEV_CERTS=true) exists.
+    DEV_CERTS: 'false',
+    TLS_CERT_FILE: '',
+    TLS_KEY_FILE: '',
   },
   stdio: ['ignore', 'ignore', 'inherit'],
 });
@@ -38,7 +42,12 @@ const fail = (msg) => {
 const watchdog = setTimeout(() => fail('load test timed out'), 6 * 60_000);
 
 for (let i = 0; ; i++) {
-  if (await fetch(`${BASE}/healthz`).then((r) => r.ok).catch(() => false)) break;
+  if (
+    await fetch(`${BASE}/healthz`)
+      .then((r) => r.ok)
+      .catch(() => false)
+  )
+    break;
   if (i > 120) fail('server did not start');
   await sleep(250);
 }
@@ -151,12 +160,37 @@ async function scenario(name, config, perParticipant, expected) {
 
 await scenario(
   'multiple_choice',
-  { ...base, id: randomUUID(), type: 'multiple_choice', prompt: 'Load MC', options: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }, { id: 'd', label: 'D' }], allowMultiple: false },
+  {
+    ...base,
+    id: randomUUID(),
+    type: 'multiple_choice',
+    prompt: 'Load MC',
+    options: [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+      { id: 'c', label: 'C' },
+      { id: 'd', label: 'D' },
+    ],
+    allowMultiple: false,
+  },
   (i) => [{ type: 'multiple_choice', optionIds: [['a', 'b', 'c', 'd'][i % 4]] }],
   PARTICIPANTS,
 );
 
-const vocabulary = ['Herz', 'Lunge', 'Niere', 'Leber', 'Milz', 'Gehirn', 'Muskel', 'Knochen', 'Blut', 'Haut', 'Darm', 'Magen'];
+const vocabulary = [
+  'Herz',
+  'Lunge',
+  'Niere',
+  'Leber',
+  'Milz',
+  'Gehirn',
+  'Muskel',
+  'Knochen',
+  'Blut',
+  'Haut',
+  'Darm',
+  'Magen',
+];
 await scenario(
   'word_cloud',
   { ...base, id: randomUUID(), type: 'word_cloud', prompt: 'Load WC', entriesPerParticipant: 3 },
@@ -168,7 +202,21 @@ await scenario(
 await Promise.all(participants.map((socket, i) => ack(socket, 'nickname:set', { nickname: `Spieler ${i + 1}` })));
 await scenario(
   'quiz',
-  { ...base, id: randomUUID(), type: 'quiz', prompt: 'Load quiz', options: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }, { id: 'd', label: 'D' }], correctOptionId: 'b', timeLimitSec: 20, startMode: 'auto' },
+  {
+    ...base,
+    id: randomUUID(),
+    type: 'quiz',
+    prompt: 'Load quiz',
+    options: [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+      { id: 'c', label: 'C' },
+      { id: 'd', label: 'D' },
+    ],
+    correctOptionId: 'b',
+    timeLimitSec: 20,
+    startMode: 'auto',
+  },
   (i) => [{ type: 'quiz', optionId: ['a', 'b', 'c', 'd'][i % 4] }],
   PARTICIPANTS,
 );
@@ -179,9 +227,13 @@ for (const s of participants) s.close();
 presenter.close();
 server.kill('SIGTERM');
 
-const pass = results.every((r) => r.lost === 0 && r.failed === 0 && r.p95AckMs < 300 && r.maxPresenterUpdatesPerSecond <= 4) && (peakRss === 0 || peakRss < 300);
+const pass =
+  results.every((r) => r.lost === 0 && r.failed === 0 && r.p95AckMs < 300 && r.maxPresenterUpdatesPerSecond <= 4) &&
+  (peakRss === 0 || peakRss < 300);
 console.log('\nsummary');
 console.table(results);
-console.log(`participants: ${PARTICIPANTS}, joined in ${joinSeconds.toFixed(1)} s, peak server RSS: ${peakRss ? `${peakRss.toFixed(0)} MB` : 'n/a'}, database: ${process.env.DATABASE_URL ? 'postgres' : 'pglite'}`);
+console.log(
+  `participants: ${PARTICIPANTS}, joined in ${joinSeconds.toFixed(1)} s, peak server RSS: ${peakRss ? `${peakRss.toFixed(0)} MB` : 'n/a'}, database: ${process.env.DATABASE_URL ? 'postgres' : 'pglite'}`,
+);
 console.log(pass ? 'PASS' : 'FAIL');
 process.exit(pass ? 0 : 1);

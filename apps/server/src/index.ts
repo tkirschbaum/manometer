@@ -12,7 +12,8 @@ log.info(
   { publicBaseUrl: env.publicBaseUrl, database: pulse.database.kind, mode: env.NODE_ENV },
   `${PRODUCT_NAME} is running`,
 );
-if (pulse.database.kind === 'pglite') log.info({ dir: env.PGLITE_DIR }, 'using the embedded database (no DATABASE_URL set)');
+if (pulse.database.kind === 'pglite')
+  log.info({ dir: env.PGLITE_DIR }, 'using the embedded database (no DATABASE_URL set)');
 
 let stopping = false;
 const shutdown = (signal: string): void => {

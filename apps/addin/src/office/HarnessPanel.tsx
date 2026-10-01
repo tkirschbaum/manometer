@@ -21,7 +21,10 @@ export function HarnessPanel({ controls }: { controls: HarnessControls }) {
   }
   const btn = 'rounded-[4px] border border-ink px-1.5 py-0.5 hover:bg-mist';
   return (
-    <div data-testid="harness" className="fixed right-2 bottom-2 z-50 flex max-w-[300px] flex-col gap-1 rounded-brand border border-ink bg-paper p-2 font-mono text-[11px] text-ink">
+    <div
+      data-testid="harness"
+      className="fixed right-2 bottom-2 z-50 flex max-w-[300px] flex-col gap-1 rounded-brand border border-ink bg-paper p-2 font-mono text-[11px] text-ink"
+    >
       <div className="flex justify-between gap-2">
         <strong>
           Harness {state.instance} · slide {state.slideId}
@@ -39,16 +42,44 @@ export function HarnessPanel({ controls }: { controls: HarnessControls }) {
         view: {state.view} · showing slide {state.currentSlideId}
       </div>
       <div className="flex flex-wrap gap-1">
-        <button type="button" className={btn} data-testid="harness-edit" onClick={() => { controls.setView('edit'); }}>
+        <button
+          type="button"
+          className={btn}
+          data-testid="harness-edit"
+          onClick={() => {
+            controls.setView('edit');
+          }}
+        >
           Normal
         </button>
-        <button type="button" className={btn} data-testid="harness-read" onClick={() => { controls.setView('read'); }}>
+        <button
+          type="button"
+          className={btn}
+          data-testid="harness-read"
+          onClick={() => {
+            controls.setView('read');
+          }}
+        >
           Slideshow
         </button>
-        <button type="button" className={btn} data-testid="harness-show-this" onClick={() => { controls.showSlide(state.slideId); }}>
+        <button
+          type="button"
+          className={btn}
+          data-testid="harness-show-this"
+          onClick={() => {
+            controls.showSlide(state.slideId);
+          }}
+        >
           Show this slide
         </button>
-        <button type="button" className={btn} data-testid="harness-show-other" onClick={() => { controls.showSlide(other); }}>
+        <button
+          type="button"
+          className={btn}
+          data-testid="harness-show-other"
+          onClick={() => {
+            controls.showSlide(other);
+          }}
+        >
           Show other slide
         </button>
         <button type="button" className={btn} onClick={() => window.open(controls.duplicate(), '_blank')}>

@@ -28,4 +28,11 @@ export const tokens = {
 /** Quiz option identity: shape first, colour second (§11.4). */
 export const QUIZ_SHAPES = ['triangle', 'diamond', 'circle', 'square', 'triangle-down', 'hexagon'] as const;
 export type QuizShape = (typeof QUIZ_SHAPES)[number];
-export const QUIZ_COLORS = [tokens.color.navy, tokens.color.red, tokens.color.teal, tokens.color.ochre, tokens.color.navy, tokens.color.red] as const;
+export const QUIZ_COLORS = [
+  tokens.color.navy,
+  tokens.color.red,
+  tokens.color.teal,
+  tokens.color.ochre,
+  tokens.color.navy,
+  tokens.color.red,
+] as const;

@@ -91,7 +91,11 @@ describe('multiple choice flow', () => {
     const ids = voters.map(() => newUuid());
     const acks = await Promise.all(
       voters.map((v, i) =>
-        call(v, 'response:submit', { itemId: item.id, clientResponseId: ids[i], payload: { type: 'multiple_choice', optionIds: [choices[i]] } }),
+        call(v, 'response:submit', {
+          itemId: item.id,
+          clientResponseId: ids[i],
+          payload: { type: 'multiple_choice', optionIds: [choices[i]] },
+        }),
       ),
     );
     for (const ack of acks) expect(ack.ok).toBe(true);
@@ -197,14 +201,20 @@ describe('activation', () => {
 describe('word cloud, open text, scale', () => {
   it('normalises and groups words, enforces entry limits, hides groups', async () => {
     const { deckId, presenter, state } = await openDeck();
-    const item = { ...mcConfig(deckId), type: 'word_cloud', entriesPerParticipant: 3 } as unknown as ReturnType<typeof mcConfig>;
+    const item = { ...mcConfig(deckId), type: 'word_cloud', entriesPerParticipant: 3 } as unknown as ReturnType<
+      typeof mcConfig
+    >;
     delete (item as Record<string, unknown>).options;
     delete (item as Record<string, unknown>).allowMultiple;
     await call(presenter, 'item:activate', { itemId: item.id, config: item });
     const p1 = await connectParticipant(server.url, state.joinCode);
     const p2 = await connectParticipant(server.url, state.joinCode);
     const send = (p: typeof p1, text: string) =>
-      call(p, 'response:submit', { itemId: item.id, clientResponseId: newUuid(), payload: { type: 'word_cloud', text } });
+      call(p, 'response:submit', {
+        itemId: item.id,
+        clientResponseId: newUuid(),
+        payload: { type: 'word_cloud', text },
+      });
     expect((await send(p1, '  Straße! ')).ok).toBe(true);
     expect((await send(p1, 'straße')).ok).toBe(true);
     expect((await send(p1, 'Strasse')).ok).toBe(true);
@@ -265,12 +275,19 @@ describe('Q&A', () => {
     const p1 = await connectParticipant(server.url, state.joinCode);
     const p2 = await connectParticipant(server.url, state.joinCode);
     const qaId = newUuid();
-    expect(await call(p1, 'qa:submit', { clientQaId: qaId, text: 'Kommt das zur Prüfung?' })).toEqual({ ok: false, error: 'CLOSED' });
+    expect(await call(p1, 'qa:submit', { clientQaId: qaId, text: 'Kommt das zur Prüfung?' })).toEqual({
+      ok: false,
+      error: 'CLOSED',
+    });
     await call(presenter, 'deck:upsert', { settings: { ...state.settings, qaEnabled: true } });
     expect((await call(p1, 'qa:submit', { clientQaId: qaId, text: 'Kommt das zur Prüfung?' })).ok).toBe(true);
     // idempotent retry
     expect((await call(p1, 'qa:submit', { clientQaId: qaId, text: 'Kommt das zur Prüfung?' })).ok).toBe(true);
-    const updated = next<{ items: { id: string; upvotes: number }[] }>(p1, 'qa:update', (l) => l.items[0]?.upvotes === 2);
+    const updated = next<{ items: { id: string; upvotes: number }[] }>(
+      p1,
+      'qa:update',
+      (l) => l.items[0]?.upvotes === 2,
+    );
     await call(p1, 'qa:upvote', { qaItemId: qaId });
     await call(p2, 'qa:upvote', { qaItemId: qaId });
     await call(p2, 'qa:upvote', { qaItemId: qaId });
@@ -301,7 +318,11 @@ describe('restart', () => {
     await call(presenter, 'item:activate', { itemId: item.id, config: item });
     const pid = newUuid();
     const voter = await connectParticipant(local.url, state.joinCode, pid);
-    await call(voter, 'response:submit', { itemId: item.id, clientResponseId: newUuid(), payload: { type: 'multiple_choice', optionIds: ['b'] } });
+    await call(voter, 'response:submit', {
+      itemId: item.id,
+      clientResponseId: newUuid(),
+      payload: { type: 'multiple_choice', optionIds: ['b'] },
+    });
     presenter.close();
     voter.close();
     await local.pulse.close();

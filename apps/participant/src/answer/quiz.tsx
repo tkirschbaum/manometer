@@ -74,13 +74,16 @@ function ResultCard({ result, item }: { result: QuizResult | null; item: PublicI
   const { t } = useI18n();
   const correctLabel = item.options.find((o) => item.correctOptionIds?.includes(o.id))?.label;
   if (!result) return <p className="mt-6 text-[18px] text-muted">{t('quiz.waitReveal')}</p>;
-  const headline = result.correct === true ? t('quiz.correct') : result.correct === false ? t('quiz.wrong') : t('quiz.noAnswer');
+  const headline =
+    result.correct === true ? t('quiz.correct') : result.correct === false ? t('quiz.wrong') : t('quiz.noAnswer');
   return (
     <div className="fade-in mt-6" role="status">
       <p className="flex items-center gap-3 text-[34px] leading-tight font-bold text-navy">
         {result.correct === true ? <CheckIcon size={34} strokeWidth={3} /> : <CrossIcon size={30} strokeWidth={3} />}
         {headline}
-        {result.correct === true ? <span className="tabular">{t('quiz.pointsGained', { points: result.points })}</span> : null}
+        {result.correct === true ? (
+          <span className="tabular">{t('quiz.pointsGained', { points: result.points })}</span>
+        ) : null}
       </p>
       {correctLabel && result.correct !== true ? (
         <p className="mt-3 text-[18px]">
@@ -88,7 +91,9 @@ function ResultCard({ result, item }: { result: QuizResult | null; item: PublicI
         </p>
       ) : null}
       {result.rank !== null ? (
-        <p className="tabular mt-4 text-[22px] font-semibold">{t('quiz.rank', { rank: result.rank, total: result.rankOf })}</p>
+        <p className="tabular mt-4 text-[22px] font-semibold">
+          {t('quiz.rank', { rank: result.rank, total: result.rankOf })}
+        </p>
       ) : null}
       <p className="tabular mt-1 text-[17px] text-muted">{t('quiz.totalPoints', { points: result.totalPoints })}</p>
     </div>

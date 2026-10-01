@@ -191,7 +191,8 @@ export const de = {
   'editor.copyDetected': 'Kopie erkannt – als neue Frage angelegt.',
   'editor.duplicateBanner': 'Diese Frage existiert doppelt (Folie kopiert?)',
   'editor.duplicateAction': 'Als eigene Frage verwenden',
-  'editor.deckDeleted': 'Ergebnisse dieser Präsentation wurden nach {days} Tagen gelöscht. Die Fragen bleiben in der Datei erhalten.',
+  'editor.deckDeleted':
+    'Ergebnisse dieser Präsentation wurden nach {days} Tagen gelöscht. Die Fragen bleiben in der Datei erhalten.',
   'editor.webUnsupported': 'PowerPoint im Web wird nicht unterstützt. Bitte die Desktop-App verwenden.',
   'editor.responses.one': '{n} Antwort',
   'editor.responses.other': '{n} Antworten',

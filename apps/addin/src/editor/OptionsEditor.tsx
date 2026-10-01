@@ -96,7 +96,10 @@ export function OptionsEditor({
                   title={t('editor.markCorrect')}
                   onClick={() => {
                     if (correct.mode === 'single') correct.onChange([row.id]);
-                    else correct.onChange(isCorrect ? correct.ids.filter((id) => id !== row.id) : [...correct.ids, row.id]);
+                    else
+                      correct.onChange(
+                        isCorrect ? correct.ids.filter((id) => id !== row.id) : [...correct.ids, row.id],
+                      );
                   }}
                   className={`flex size-6 shrink-0 items-center justify-center border ${correct.mode === 'single' ? 'rounded-full' : 'rounded-[4px]'} ${isCorrect ? 'border-navy bg-navy text-paper' : 'border-line text-transparent hover:border-navy'}`}
                 >

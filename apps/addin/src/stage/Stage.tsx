@@ -189,10 +189,18 @@ function Visualisation({ data, actions, t }: { data: StageData; actions: StageAc
     case 'open_text': {
       const entries = results?.type === 'open_text' ? results.entries : [];
       if (entries.length === 0) return <Empty>{t('stage.empty', { code })}</Empty>;
-      return <Wall entries={entries} hideLabel={t('stage.hide')} {...(actions.hideResponse ? { onHide: actions.hideResponse } : {})} />;
+      return (
+        <Wall
+          entries={entries}
+          hideLabel={t('stage.hide')}
+          {...(actions.hideResponse ? { onHide: actions.hideResponse } : {})}
+        />
+      );
     }
     case 'scale':
-      return <Scale config={config} results={results?.type === 'scale' ? results : null} language={data.language} t={t} />;
+      return (
+        <Scale config={config} results={results?.type === 'scale' ? results : null} language={data.language} t={t} />
+      );
     case 'quiz':
       return <Quiz data={data} config={config} actions={actions} t={t} />;
   }
@@ -283,7 +291,10 @@ function Wall({
   const cols: (typeof visible)[] = Array.from({ length: columns }, () => []);
   visible.forEach((entry, i) => cols[i % columns]?.push(entry));
   return (
-    <div ref={ref} style={{ height: '100%', overflow: 'hidden', display: 'flex', gap: '1.6cqw', alignItems: 'flex-start' }}>
+    <div
+      ref={ref}
+      style={{ height: '100%', overflow: 'hidden', display: 'flex', gap: '1.6cqw', alignItems: 'flex-start' }}
+    >
       {cols.map((col, ci) => (
         <div key={ci} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.6cqw' }}>
           {col.map((entry) => (
@@ -477,7 +488,17 @@ function Leaderboard({ view, t, language }: { view: LeaderboardView | null; t: T
   );
 }
 
-function QaWall({ items, t, code, actions }: { items: QaItemView[]; t: Translate; code: string; actions: StageActions }) {
+function QaWall({
+  items,
+  t,
+  code,
+  actions,
+}: {
+  items: QaItemView[];
+  t: Translate;
+  code: string;
+  actions: StageActions;
+}) {
   if (items.length === 0) return <Empty>{t('stage.qaEmpty', { code })}</Empty>;
   const open = items.filter((q) => !q.answered).sort((a, b) => b.upvotes - a.upvotes || a.createdAt - b.createdAt);
   const answered = items.filter((q) => q.answered);
@@ -506,7 +527,12 @@ function QaWall({ items, t, code, actions }: { items: QaItemView[]; t: Translate
                 </button>
               ) : null}
               {actions.hideQa ? (
-                <button type="button" className="hide-btn" style={{ position: 'static' }} onClick={() => actions.hideQa?.(q.id)}>
+                <button
+                  type="button"
+                  className="hide-btn"
+                  style={{ position: 'static' }}
+                  onClick={() => actions.hideQa?.(q.id)}
+                >
                   <EyeOffIcon />
                   {t('stage.hide')}
                 </button>

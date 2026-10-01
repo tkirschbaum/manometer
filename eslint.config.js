@@ -22,7 +22,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.mjs', '*.ts', 'scripts/*.mjs', 'apps/*/*.mjs'],
+          allowDefaultProject: ['*.js', '*.mjs', 'scripts/*.mjs', 'apps/*/*.mjs'],
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 40,
         },
         tsconfigRootDir: import.meta.dirname,
@@ -60,7 +60,20 @@ export default tseslint.config(
     files: ['**/*.js', '**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
-      globals: { console: 'readonly', process: 'readonly', URL: 'readonly', Buffer: 'readonly' },
+      globals: Object.fromEntries(
+        [
+          'console',
+          'process',
+          'URL',
+          'Buffer',
+          'fetch',
+          'performance',
+          'setTimeout',
+          'clearTimeout',
+          'setInterval',
+          'clearInterval',
+        ].map((name) => [name, 'readonly']),
+      ),
     },
   },
   {

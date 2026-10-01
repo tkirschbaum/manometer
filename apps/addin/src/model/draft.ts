@@ -10,7 +10,15 @@ import {
 import type { ItemDraft } from './schemas';
 
 export type SlideKind = QuestionType | 'leaderboard' | 'qa_wall';
-export const SLIDE_KINDS: SlideKind[] = ['multiple_choice', 'word_cloud', 'open_text', 'scale', 'quiz', 'leaderboard', 'qa_wall'];
+export const SLIDE_KINDS: SlideKind[] = [
+  'multiple_choice',
+  'word_cloud',
+  'open_text',
+  'scale',
+  'quiz',
+  'leaderboard',
+  'qa_wall',
+];
 
 export function kindOf(draft: ItemDraft): SlideKind {
   return draft.kind === 'question' ? draft.type : draft.kind;

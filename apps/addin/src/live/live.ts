@@ -144,7 +144,9 @@ export class Live {
       const parsed = itemStateMessageSchema.safeParse(raw);
       if (!parsed.success || parsed.data.itemId !== this.itemId) return;
       this.sampleClock(parsed.data.serverNow);
-      this.set({ item: { state: parsed.data.state, revealed: parsed.data.revealed, phaseEndsAt: parsed.data.phaseEndsAt } });
+      this.set({
+        item: { state: parsed.data.state, revealed: parsed.data.revealed, phaseEndsAt: parsed.data.phaseEndsAt },
+      });
     });
     socket.on('results:update', (raw) => {
       const parsed = resultsViewSchema.safeParse(raw);
@@ -181,9 +183,11 @@ export class Live {
     const socket = this.socket;
     if (!socket?.connected) return Promise.resolve(null);
     return new Promise((resolve) => {
-      (socket.timeout(ACK_TIMEOUT_MS) as unknown as {
-        emit: (ev: string, p: unknown, cb: (err: Error | null, res?: Ack<T>) => void) => void;
-      }).emit(event, payload, (err, res) => {
+      (
+        socket.timeout(ACK_TIMEOUT_MS) as unknown as {
+          emit: (ev: string, p: unknown, cb: (err: Error | null, res?: Ack<T>) => void) => void;
+        }
+      ).emit(event, payload, (err, res) => {
         resolve(err || !res ? null : res);
       });
     });

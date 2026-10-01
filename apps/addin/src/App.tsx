@@ -27,7 +27,13 @@ export function App({ host, harness }: { host: OfficeHost; harness: HarnessContr
       {showStage ? (
         <SlideshowStage controller={controller} state={state} live={live} />
       ) : (
-        <Editor controller={controller} state={state} live={live} t={t} webUnsupported={host.platform === 'OfficeOnline'} />
+        <Editor
+          controller={controller}
+          state={state}
+          live={live}
+          t={t}
+          webUnsupported={host.platform === 'OfficeOnline'}
+        />
       )}
       {harness ? <HarnessPanel controls={harness} /> : null}
     </>

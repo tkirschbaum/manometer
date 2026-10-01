@@ -2,7 +2,16 @@ import type { PresenterDeckState } from '@pulse/shared';
 import { newUuid } from '@pulse/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runRetention, scheduleRetention } from '../src/jobs/retention';
-import { call, connectParticipant, connectPresenter, mcConfig, newDeck, next, startServer, type TestServer } from './helpers';
+import {
+  call,
+  connectParticipant,
+  connectPresenter,
+  mcConfig,
+  newDeck,
+  next,
+  startServer,
+  type TestServer,
+} from './helpers';
 
 let server: TestServer;
 
@@ -18,11 +27,17 @@ async function deckWithVotes() {
   const { deckId, deckSecret } = newDeck();
   const presenter = await connectPresenter(server.url, deckId, deckSecret);
   const deck = await next<PresenterDeckState>(presenter, 'deck:state');
-  await call(presenter, 'deck:upsert', { settings: { ...deck.settings, title: 'Anatomie; "Teil 1"', qaEnabled: true } });
+  await call(presenter, 'deck:upsert', {
+    settings: { ...deck.settings, title: 'Anatomie; "Teil 1"', qaEnabled: true },
+  });
   const item = mcConfig(deckId, { prompt: 'Größe; "Herz"?' });
   await call(presenter, 'item:activate', { itemId: item.id, config: item });
   const p = await connectParticipant(server.url, deck.joinCode);
-  await call(p, 'response:submit', { itemId: item.id, clientResponseId: newUuid(), payload: { type: 'multiple_choice', optionIds: ['a'] } });
+  await call(p, 'response:submit', {
+    itemId: item.id,
+    clientResponseId: newUuid(),
+    payload: { type: 'multiple_choice', optionIds: ['a'] },
+  });
   await call(p, 'qa:submit', { clientQaId: newUuid(), text: '=HYPERLINK("x")\nZeile 2' });
   return { deckId, presenter, p, item, deck };
 }
@@ -72,7 +87,9 @@ describe('http', () => {
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]); // BOM
     const csv = new TextDecoder().decode(bytes.slice(3));
     const lines = csv.split('\r\n');
-    expect(lines[0]).toBe('deck_title;slide_item_id;question_type;prompt;participant_ref;nickname;answer;points;response_ms;hidden;submitted_at');
+    expect(lines[0]).toBe(
+      'deck_title;slide_item_id;question_type;prompt;participant_ref;nickname;answer;points;response_ms;hidden;submitted_at',
+    );
     expect(lines[1]).toContain('"Anatomie; ""Teil 1""";');
     expect(lines[1]).toContain(';multiple_choice;"Größe; ""Herz""?";');
     expect(lines[1]).toMatch(/;Gut;;;false;\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\+0[12]:00$/);
@@ -91,11 +108,16 @@ describe('http', () => {
 
     const reset = await fetch(`${server.url}/api/dashboard/items/${item.id}/reset`, { method: 'POST', headers: auth });
     expect(reset.status).toBe(200);
-    const after = (await (await fetch(`${server.url}/api/dashboard`, { headers: auth })).json()) as { items: { responses: number }[] };
+    const after = (await (await fetch(`${server.url}/api/dashboard`, { headers: auth })).json()) as {
+      items: { responses: number }[];
+    };
     expect(after.items[0]?.responses).toBe(0);
 
     expect((await fetch(`${server.url}/api/dashboard/delete`, { method: 'POST', headers: auth })).status).toBe(200);
-    const gone = (await (await fetch(`${server.url}/api/dashboard`, { headers: auth })).json()) as { items: unknown[]; qa: { total: number } };
+    const gone = (await (await fetch(`${server.url}/api/dashboard`, { headers: auth })).json()) as {
+      items: unknown[];
+      qa: { total: number };
+    };
     expect(gone.items).toEqual([]);
     expect(gone.qa.total).toBe(0);
     p.close();

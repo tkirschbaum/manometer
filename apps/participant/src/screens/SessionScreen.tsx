@@ -43,9 +43,13 @@ export function SessionScreen({ code }: { code: string }) {
       ) : tab === 'qa' && qaEnabled ? (
         <QaTab state={state} session={session} />
       ) : (
-        <LiveView state={state} session={session} onOpenQa={() => {
-          setTab('qa');
-        }} />
+        <LiveView
+          state={state}
+          session={session}
+          onOpenQa={() => {
+            setTab('qa');
+          }}
+        />
       )}
     </Shell>
   );
@@ -83,7 +87,15 @@ function Waiting() {
   );
 }
 
-function LiveView({ state, session, onOpenQa }: { state: SessionState; session: SessionController; onOpenQa: () => void }) {
+function LiveView({
+  state,
+  session,
+  onOpenQa,
+}: {
+  state: SessionState;
+  session: SessionController;
+  onOpenQa: () => void;
+}) {
   const { t } = useI18n();
   const item = state.activeItem;
   if (!item) return <Waiting />;
@@ -93,7 +105,9 @@ function LiveView({ state, session, onOpenQa }: { state: SessionState; session: 
       <div className="mt-10">
         <p className="text-[20px]">{t('session.leaderboard')}</p>
         {last && last.rank !== null ? (
-          <p className="tabular mt-4 text-[24px] font-bold text-navy">{t('quiz.rank', { rank: last.rank, total: last.rankOf })}</p>
+          <p className="tabular mt-4 text-[24px] font-bold text-navy">
+            {t('quiz.rank', { rank: last.rank, total: last.rankOf })}
+          </p>
         ) : null}
       </div>
     );
@@ -113,7 +127,15 @@ function LiveView({ state, session, onOpenQa }: { state: SessionState; session: 
   return <QuestionView key={item.id} item={item} state={state} session={session} />;
 }
 
-function QuestionView({ item, state, session }: { item: PublicItemView; state: SessionState; session: SessionController }) {
+function QuestionView({
+  item,
+  state,
+  session,
+}: {
+  item: PublicItemView;
+  state: SessionState;
+  session: SessionController;
+}) {
   const { t } = useI18n();
   const [composing, setComposing] = useState(false);
   const mine = state.mine?.itemId === item.id ? state.mine.submissions : [];
@@ -134,7 +156,10 @@ function QuestionView({ item, state, session }: { item: PublicItemView; state: S
   ) : null;
 
   const showResults =
-    state.results !== null && item.showOnPhone && (all.length > 0 || closed) && (item.state !== 'open' || mine.length > 0);
+    state.results !== null &&
+    item.showOnPhone &&
+    (all.length > 0 || closed) &&
+    (item.state !== 'open' || mine.length > 0);
 
   return (
     <article className="mt-4 flex flex-1 flex-col">
@@ -220,7 +245,9 @@ function Sent({
           </ul>
         </>
       ) : null}
-      {multiple && !closed && remaining <= 0 ? <p className="mt-4 text-[16px] text-muted">{t('session.allSent')}</p> : null}
+      {multiple && !closed && remaining <= 0 ? (
+        <p className="mt-4 text-[16px] text-muted">{t('session.allSent')}</p>
+      ) : null}
       {children}
     </div>
   );

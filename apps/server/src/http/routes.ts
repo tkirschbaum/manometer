@@ -65,7 +65,12 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
     const data = await loadExportData(store, deck);
     const participants = await store.listNicknames(deck.id);
     return reply.send({
-      deck: { id: deck.id, title: deck.settings.title, joinCode: deck.joinCode, slideLanguage: deck.settings.slideLanguage },
+      deck: {
+        id: deck.id,
+        title: deck.settings.title,
+        joinCode: deck.joinCode,
+        slideLanguage: deck.settings.slideLanguage,
+      },
       participants: participants.length,
       items: data.items.map(({ row, responses }) => {
         const visible = responses.filter((r) => !r.hidden);

@@ -22,7 +22,8 @@ export function registerSecurityHeaders(app: FastifyInstance, env: Env): void {
   app.addHook('onSend', async (req, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'no-referrer');
-    if (env.publicBaseUrl.startsWith('https://') && env.NODE_ENV === 'production') {
+    // HSTS only for a real deployment, never for localhost (local mode uses the dev certificate).
+    if (env.publicBaseUrl.startsWith('https://') && env.NODE_ENV === 'production' && !env.DEV_CERTS) {
       reply.header('Strict-Transport-Security', 'max-age=31536000');
     }
     if (env.NODE_ENV !== 'development') {

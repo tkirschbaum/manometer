@@ -37,7 +37,10 @@ describe('quiz engine', () => {
     expect(await call(ben, 'nickname:set', { nickname: 'anna' })).toEqual({ ok: true, nickname: 'anna 2' });
 
     const quiz = quizConfig(deckId);
-    const snap = await call<{ state: string; phaseEndsAt: number }>(presenter, 'item:activate', { itemId: quiz.id, config: quiz });
+    const snap = await call<{ state: string; phaseEndsAt: number }>(presenter, 'item:activate', {
+      itemId: quiz.id,
+      config: quiz,
+    });
     expect(snap.ok && snap.state).toBe('countdown');
     const start = clock.now();
     if (snap.ok) expect(snap.phaseEndsAt).toBe(start + 3000);
@@ -45,7 +48,11 @@ describe('quiz engine', () => {
     const answering = next<ParticipantDeckState>(anna, 'deck:state', (s) => s.activeItem?.state === 'answering');
     // Answer during countdown -> not active yet
     expect(
-      await call(anna, 'response:submit', { itemId: quiz.id, clientResponseId: newUuid(), payload: { type: 'quiz', optionId: 'w' } }),
+      await call(anna, 'response:submit', {
+        itemId: quiz.id,
+        clientResponseId: newUuid(),
+        payload: { type: 'quiz', optionId: 'w' },
+      }),
     ).toEqual({ ok: false, error: 'NOT_ACTIVE' });
     await clock.advance(3000);
     const live = await answering;
@@ -55,21 +62,41 @@ describe('quiz engine', () => {
 
     // Cleo has no nickname
     expect(
-      await call(cleo, 'response:submit', { itemId: quiz.id, clientResponseId: newUuid(), payload: { type: 'quiz', optionId: 'w' } }),
+      await call(cleo, 'response:submit', {
+        itemId: quiz.id,
+        clientResponseId: newUuid(),
+        payload: { type: 'quiz', optionId: 'w' },
+      }),
     ).toEqual({ ok: false, error: 'NICKNAME_REQUIRED' });
 
     await clock.advance(2000);
-    const a = await call(anna, 'response:submit', { itemId: quiz.id, clientResponseId: newUuid(), payload: { type: 'quiz', optionId: 'w' } });
+    const a = await call(anna, 'response:submit', {
+      itemId: quiz.id,
+      clientResponseId: newUuid(),
+      payload: { type: 'quiz', optionId: 'w' },
+    });
     expect(a.ok).toBe(true);
     await call(cleo, 'nickname:set', { nickname: 'Cleo' });
     await clock.advance(10_000);
     expect(
-      (await call(cleo, 'response:submit', { itemId: quiz.id, clientResponseId: newUuid(), payload: { type: 'quiz', optionId: 'g' } })).ok,
+      (
+        await call(cleo, 'response:submit', {
+          itemId: quiz.id,
+          clientResponseId: newUuid(),
+          payload: { type: 'quiz', optionId: 'g' },
+        })
+      ).ok,
     ).toBe(true);
     // Within the 300 ms grace after the end -> accepted
     await clock.advance(8000 + 200);
     expect(
-      (await call(ben, 'response:submit', { itemId: quiz.id, clientResponseId: newUuid(), payload: { type: 'quiz', optionId: 'w' } })).ok,
+      (
+        await call(ben, 'response:submit', {
+          itemId: quiz.id,
+          clientResponseId: newUuid(),
+          payload: { type: 'quiz', optionId: 'w' },
+        })
+      ).ok,
     ).toBe(true);
 
     const annaResult = next<QuizResult>(anna, 'quiz:result');
@@ -81,7 +108,11 @@ describe('quiz engine', () => {
     const extra = await connectParticipant(server.url, deck.joinCode);
     await call(extra, 'nickname:set', { nickname: 'Dora' });
     expect(
-      await call(extra, 'response:submit', { itemId: quiz.id, clientResponseId: newUuid(), payload: { type: 'quiz', optionId: 'w' } }),
+      await call(extra, 'response:submit', {
+        itemId: quiz.id,
+        clientResponseId: newUuid(),
+        payload: { type: 'quiz', optionId: 'w' },
+      }),
     ).toEqual({ ok: false, error: 'TOO_LATE' });
 
     const ra = await annaResult;
@@ -117,7 +148,11 @@ describe('quiz engine', () => {
     await clock.advance(3000);
     clock.current += 10_000 + 301; // time passes, timer not yet run
     expect(
-      await call(p, 'response:submit', { itemId: quiz.id, clientResponseId: newUuid(), payload: { type: 'quiz', optionId: 'w' } }),
+      await call(p, 'response:submit', {
+        itemId: quiz.id,
+        clientResponseId: newUuid(),
+        payload: { type: 'quiz', optionId: 'w' },
+      }),
     ).toEqual({ ok: false, error: 'TOO_LATE' });
     await clock.advance(10);
     p.close();

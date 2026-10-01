@@ -1,0 +1,93 @@
+# Production stack (master prompt §14): caddy (HTTPS) → server → postgres, plus a nightly backup.
+#   cp .env.example .env   # fill in APP_DOMAIN, secrets, POSTGRES_PASSWORD
+#   docker compose --env-file .env -f infra/docker-compose.yml up -d --build
+name: pulse
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: pulse
+      POSTGRES_USER: pulse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      TZ: ${TZ:-Europe/Vienna}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pulse -d pulse']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.server
+      args:
+        APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN in .env}
+        PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+        ADDIN_PROVIDER: ${ADDIN_PROVIDER:-TK Webwerk}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      HOST: 0.0.0.0
+      APP_DOMAIN: ${APP_DOMAIN}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      DATABASE_URL: postgres://pulse:${POSTGRES_PASSWORD}@postgres:5432/pulse
+      EXPORT_TOKEN_SECRET: ${EXPORT_TOKEN_SECRET:?set EXPORT_TOKEN_SECRET in .env}
+      PARTICIPANT_HASH_SALT: ${PARTICIPANT_HASH_SALT:?set PARTICIPANT_HASH_SALT in .env}
+      RETENTION_DAYS: ${RETENTION_DAYS:-90}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TZ: ${TZ:-Europe/Vienna}
+      TRUST_PROXY: 'true'
+    # No published port: only Caddy talks to the server.
+    expose:
+      - '3000'
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # Nightly pg_dump at 03:15 (TZ), keeps 7 days in the "backups" volume.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: pulse
+      PGDATABASE: pulse
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ:-Europe/Vienna}
+    volumes:
+      - backups:/backups
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        echo '15 3 * * * umask 077 && pg_dump -Fc -f /backups/pulse-$$(date +\%Y\%m\%d).dump && find /backups -name "pulse-*.dump" -mtime +6 -delete' > /etc/crontabs/root
+        exec crond -f -l 8
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  backups:

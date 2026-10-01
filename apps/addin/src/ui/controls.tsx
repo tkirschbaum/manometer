@@ -22,7 +22,17 @@ export function Button({
   );
 }
 
-export function Field({ label, htmlFor, children, hint }: { label: string; htmlFor?: string; children: ReactNode; hint?: string }) {
+export function Field({
+  label,
+  htmlFor,
+  children,
+  hint,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: ReactNode;
+  hint?: string;
+}) {
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={htmlFor} className="text-[12px] font-semibold text-muted">
@@ -37,7 +47,17 @@ export function Field({ label, htmlFor, children, hint }: { label: string; htmlF
 export const inputClass =
   'w-full rounded-brand border border-line bg-paper px-2.5 py-1.5 text-ink placeholder:text-muted/70 focus:border-navy focus:outline-none';
 
-export function Toggle({ checked, onChange, label, id }: { checked: boolean; onChange: (v: boolean) => void; label: string; id: string }) {
+export function Toggle({
+  checked,
+  onChange,
+  label,
+  id,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  id: string;
+}) {
   return (
     <label htmlFor={id} className="flex cursor-pointer items-center gap-2 select-none">
       <input
@@ -130,7 +150,15 @@ export function Menu({
   );
 }
 
-export function MenuItem({ children, onSelect, disabled }: { children: ReactNode; onSelect: () => void; disabled?: boolean }) {
+export function MenuItem({
+  children,
+  onSelect,
+  disabled,
+}: {
+  children: ReactNode;
+  onSelect: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
@@ -195,7 +223,10 @@ export function ConfirmDialog({
 export function Toast({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div role="status" className="fixed bottom-3 left-1/2 z-40 -translate-x-1/2 rounded-brand bg-navy px-3 py-2 font-semibold text-paper">
+    <div
+      role="status"
+      className="fixed bottom-3 left-1/2 z-40 -translate-x-1/2 rounded-brand bg-navy px-3 py-2 font-semibold text-paper"
+    >
       {message}
     </div>
   );

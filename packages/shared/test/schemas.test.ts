@@ -63,7 +63,14 @@ describe('slideItemConfigSchema', () => {
     const cases: unknown[] = [
       { ...base, kind: 'question', type: 'word_cloud', prompt: 'Ein Wort' },
       { ...base, kind: 'question', type: 'open_text', prompt: 'Frage', entriesPerParticipant: 5 },
-      { ...base, kind: 'question', type: 'scale', prompt: 'Skala', statements: [{ id: 's1', label: 'Aussage' }], range: 10 },
+      {
+        ...base,
+        kind: 'question',
+        type: 'scale',
+        prompt: 'Skala',
+        statements: [{ id: 's1', label: 'Aussage' }],
+        range: 10,
+      },
       {
         ...base,
         kind: 'question',
@@ -102,8 +109,13 @@ describe('slideItemConfigSchema', () => {
   it('rejects word cloud with more than 3 entries and unknown kinds', () => {
     const base = { id: newUuid(), deckId, schemaVersion: 1 };
     expect(
-      slideItemConfigSchema.safeParse({ ...base, kind: 'question', type: 'word_cloud', prompt: 'x', entriesPerParticipant: 4 })
-        .success,
+      slideItemConfigSchema.safeParse({
+        ...base,
+        kind: 'question',
+        type: 'word_cloud',
+        prompt: 'x',
+        entriesPerParticipant: 4,
+      }).success,
     ).toBe(false);
     expect(slideItemConfigSchema.safeParse({ ...base, kind: 'poll' }).success).toBe(false);
   });

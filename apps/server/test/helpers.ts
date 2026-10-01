@@ -44,9 +44,7 @@ export interface TestServer {
   stop: () => Promise<void>;
 }
 
-export async function startServer(
-  options: CreateAppOptions & { database?: Database } = {},
-): Promise<TestServer> {
+export async function startServer(options: CreateAppOptions & { database?: Database } = {}): Promise<TestServer> {
   const env = testEnv();
   const database = options.database ?? (await createDatabase(env));
   const pulse = await createApp(env, { serveApps: 'none', retention: false, ...options, database });
@@ -72,7 +70,11 @@ export function connectPresenter(url: string, deckId: string, deckSecret: string
   return connected(socket);
 }
 
-export function connectParticipant(url: string, joinCode: string, participantId = newUuid()): Promise<ParticipantClient> {
+export function connectParticipant(
+  url: string,
+  joinCode: string,
+  participantId = newUuid(),
+): Promise<ParticipantClient> {
   const socket: ParticipantClient = io(`${url}${NAMESPACES.participant}`, {
     auth: { joinCode, participantId },
     transports: ['websocket'],
@@ -116,7 +118,12 @@ export function call<T extends object>(socket: Socket, event: string, payload: u
 }
 
 /** Resolves with the first matching event, including ones that arrived before this call (consumed). */
-export function next<T>(socket: Socket, event: string, predicate: (value: T) => boolean = () => true, timeoutMs = 5000): Promise<T> {
+export function next<T>(
+  socket: Socket,
+  event: string,
+  predicate: (value: T) => boolean = () => true,
+  timeoutMs = 5000,
+): Promise<T> {
   const buffer = received.get(socket) ?? [];
   const index = buffer.findIndex((e) => e.event === event && predicate(e.value as T));
   if (index >= 0) {

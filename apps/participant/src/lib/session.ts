@@ -221,13 +221,15 @@ export class SessionController {
   }
 
   private refreshMine(itemId: string): void {
-    this.socket?.timeout(ACK_TIMEOUT_MS).emit('item:mine', { itemId }, (err: Error | null, res?: Ack<{ mine: MyResponseState }>) => {
-      if (err || !res?.ok) return;
-      const parsed = myResponseStateSchema.safeParse(res.mine);
-      if (parsed.success && parsed.data.itemId === this.state.activeItem?.id) {
-        this.set({ mine: parsed.data, quizResult: parsed.data.quizResult ?? this.state.quizResult });
-      }
-    });
+    this.socket
+      ?.timeout(ACK_TIMEOUT_MS)
+      .emit('item:mine', { itemId }, (err: Error | null, res?: Ack<{ mine: MyResponseState }>) => {
+        if (err || !res?.ok) return;
+        const parsed = myResponseStateSchema.safeParse(res.mine);
+        if (parsed.success && parsed.data.itemId === this.state.activeItem?.id) {
+          this.set({ mine: parsed.data, quizResult: parsed.data.quizResult ?? this.state.quizResult });
+        }
+      });
   }
 
   // -- actions ------------------------------------------------------------------
@@ -271,7 +273,8 @@ export class SessionController {
             if (err || !res) return; // stays queued, retried on reconnect
             this.drop(entry);
             if (!res.ok) {
-              if (entry.itemId === this.state.activeItem?.id && res.error !== 'NOT_ACTIVE') this.set({ error: res.error });
+              if (entry.itemId === this.state.activeItem?.id && res.error !== 'NOT_ACTIVE')
+                this.set({ error: res.error });
               return;
             }
             const parsed = myResponseStateSchema.safeParse(res.mine);
@@ -281,16 +284,20 @@ export class SessionController {
     } else {
       socket
         .timeout(ACK_TIMEOUT_MS)
-        .emit('qa:submit', { clientQaId: entry.clientQaId, text: entry.text }, (err: Error | null, res?: Ack<{ id: string }>) => {
-          this.set({ sending: false });
-          if (err || !res) return;
-          this.drop(entry);
-          if (!res.ok) {
-            this.set({ error: res.error });
-            return;
-          }
-          this.set({ qaMine: new Set([...this.state.qaMine, res.id]) });
-        });
+        .emit(
+          'qa:submit',
+          { clientQaId: entry.clientQaId, text: entry.text },
+          (err: Error | null, res?: Ack<{ id: string }>) => {
+            this.set({ sending: false });
+            if (err || !res) return;
+            this.drop(entry);
+            if (!res.ok) {
+              this.set({ error: res.error });
+              return;
+            }
+            this.set({ qaMine: new Set([...this.state.qaMine, res.id]) });
+          },
+        );
     }
   }
 
@@ -299,14 +306,16 @@ export class SessionController {
     if (up) voted.add(qaItemId);
     else voted.delete(qaItemId);
     this.set({ qaVoted: voted });
-    this.socket?.timeout(ACK_TIMEOUT_MS).emit(up ? 'qa:upvote' : 'qa:unvote', { qaItemId }, (err: Error | null, res?: Ack) => {
-      if (err || !res?.ok) {
-        const revert = new Set(this.state.qaVoted);
-        if (up) revert.delete(qaItemId);
-        else revert.add(qaItemId);
-        this.set({ qaVoted: revert, ...(res && !res.ok ? { error: res.error } : {}) });
-      }
-    });
+    this.socket
+      ?.timeout(ACK_TIMEOUT_MS)
+      .emit(up ? 'qa:upvote' : 'qa:unvote', { qaItemId }, (err: Error | null, res?: Ack) => {
+        if (err || !res?.ok) {
+          const revert = new Set(this.state.qaVoted);
+          if (up) revert.delete(qaItemId);
+          else revert.add(qaItemId);
+          this.set({ qaVoted: revert, ...(res && !res.ok ? { error: res.error } : {}) });
+        }
+      });
   }
 
   setNickname(nickname: string): Promise<Ack<{ nickname: string }>> {
@@ -316,14 +325,16 @@ export class SessionController {
         resolve({ ok: false, error: 'INTERNAL' });
         return;
       }
-      socket.timeout(ACK_TIMEOUT_MS).emit('nickname:set', { nickname }, (err: Error | null, res?: Ack<{ nickname: string }>) => {
-        if (err || !res) {
-          resolve({ ok: false, error: 'INTERNAL' });
-          return;
-        }
-        if (res.ok) this.set({ nickname: res.nickname });
-        resolve(res);
-      });
+      socket
+        .timeout(ACK_TIMEOUT_MS)
+        .emit('nickname:set', { nickname }, (err: Error | null, res?: Ack<{ nickname: string }>) => {
+          if (err || !res) {
+            resolve({ ok: false, error: 'INTERNAL' });
+            return;
+          }
+          if (res.ok) this.set({ nickname: res.nickname });
+          resolve(res);
+        });
     });
   }
 

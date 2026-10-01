@@ -38,7 +38,13 @@ export function JoinScreen({ initialCode, notFound = false }: { initialCode?: st
   };
 
   const message =
-    status === 'notFound' ? t('join.notFound') : status === 'invalid' ? t('join.invalid') : status === 'offline' ? t('join.offline') : null;
+    status === 'notFound'
+      ? t('join.notFound')
+      : status === 'invalid'
+        ? t('join.invalid')
+        : status === 'offline'
+          ? t('join.offline')
+          : null;
 
   return (
     <Shell>
@@ -69,7 +75,11 @@ export function JoinScreen({ initialCode, notFound = false }: { initialCode?: st
         <p id="join-hint" className="mt-3 text-[16px] text-muted">
           {t('join.hint')}
         </p>
-        <p id="join-error" role="alert" className="mt-3 flex min-h-7 items-start gap-2 text-[17px] font-semibold text-ink">
+        <p
+          id="join-error"
+          role="alert"
+          className="mt-3 flex min-h-7 items-start gap-2 text-[17px] font-semibold text-ink"
+        >
           {message ? (
             <>
               <CrossIcon size={20} className="mt-0.5 shrink-0" />

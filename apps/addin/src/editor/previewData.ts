@@ -23,9 +23,27 @@ export function previewResults(config: SlideItemConfig | null): {
   };
   const now = Date.now();
   const qa: QaItemView[] = [
-    { id: '00000000-0000-4000-8000-000000000001', text: 'Kommt das Thema in der Prüfung vor?', upvotes: 14, answered: false, createdAt: now - 60_000 },
-    { id: '00000000-0000-4000-8000-000000000002', text: 'Können die Folien danach hochgeladen werden?', upvotes: 9, answered: false, createdAt: now - 50_000 },
-    { id: '00000000-0000-4000-8000-000000000003', text: 'Gibt es eine Literaturliste?', upvotes: 4, answered: true, createdAt: now - 40_000 },
+    {
+      id: '00000000-0000-4000-8000-000000000001',
+      text: 'Kommt das Thema in der Prüfung vor?',
+      upvotes: 14,
+      answered: false,
+      createdAt: now - 60_000,
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000002',
+      text: 'Können die Folien danach hochgeladen werden?',
+      upvotes: 9,
+      answered: false,
+      createdAt: now - 50_000,
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000003',
+      text: 'Gibt es eine Literaturliste?',
+      upvotes: 4,
+      answered: true,
+      createdAt: now - 40_000,
+    },
   ];
   if (config?.kind !== 'question') return { results: null, item, leaderboard, qa };
   const base = { itemId: config.id };
@@ -34,7 +52,12 @@ export function previewResults(config: SlideItemConfig | null): {
       const weights = [14, 23, 6, 3, 2, 1, 1, 1];
       const counts = Object.fromEntries(config.options.map((o, i) => [o.id, weights[i] ?? 1]));
       const total = Object.values(counts).reduce((a, b) => a + b, 0);
-      return { results: { ...base, type: 'multiple_choice', counts, respondents: total, responses: total }, item, leaderboard, qa };
+      return {
+        results: { ...base, type: 'multiple_choice', counts, respondents: total, responses: total },
+        item,
+        leaderboard,
+        qa,
+      };
     }
     case 'quiz': {
       const weights = [5, 21, 8, 3, 2, 1];
@@ -48,7 +71,20 @@ export function previewResults(config: SlideItemConfig | null): {
       };
     }
     case 'word_cloud': {
-      const words = ['Neugier', 'Teamarbeit', 'Praxis', 'Anatomie', 'Zeit', 'Fragen', 'Struktur', 'Beispiele', 'Pausen', 'Motivation', 'Klarheit', 'Tempo'];
+      const words = [
+        'Neugier',
+        'Teamarbeit',
+        'Praxis',
+        'Anatomie',
+        'Zeit',
+        'Fragen',
+        'Struktur',
+        'Beispiele',
+        'Pausen',
+        'Motivation',
+        'Klarheit',
+        'Tempo',
+      ];
       return {
         results: {
           ...base,

@@ -1,0 +1,22 @@
+# Development database for `pnpm dev` when DATABASE_URL=postgres://pulse:pulse@localhost:5432/pulse
+name: pulse-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pulse
+      POSTGRES_USER: pulse
+      POSTGRES_PASSWORD: pulse
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pulse -d pulse']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata-dev:

@@ -30,10 +30,18 @@ const envSchema = z
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production' && !env.EXPORT_TOKEN_SECRET) {
-      ctx.addIssue({ code: 'custom', path: ['EXPORT_TOKEN_SECRET'], message: 'required in production (min. 32 chars)' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EXPORT_TOKEN_SECRET'],
+        message: 'required in production (min. 32 chars)',
+      });
     }
     if (env.NODE_ENV === 'production' && !env.PARTICIPANT_HASH_SALT) {
-      ctx.addIssue({ code: 'custom', path: ['PARTICIPANT_HASH_SALT'], message: 'required in production (min. 16 chars)' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PARTICIPANT_HASH_SALT'],
+        message: 'required in production (min. 16 chars)',
+      });
     }
   });
 
@@ -64,7 +72,8 @@ function firstExisting(paths: string[]): string {
 }
 
 export function parseEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const result = envSchema.safeParse(source);
+  // Empty values (e.g. `PUBLIC_BASE_URL=` or `${VAR:-}` in Docker Compose) count as unset.
+  const result = envSchema.safeParse(Object.fromEntries(Object.entries(source).filter(([, v]) => v !== '')));
   if (!result.success) {
     const lines = result.error.issues.map((issue) => `  ${issue.path.join('.')}: ${issue.message}`);
     throw new Error(`Invalid environment:\n${lines.join('\n')}`);

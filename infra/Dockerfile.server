@@ -1,0 +1,31 @@
+# Multi-stage build (master prompt §14): builds shared + both SPAs + server, ships only what runs.
+#   docker compose -f infra/docker-compose.yml build
+FROM node:22-alpine AS build
+RUN corepack enable
+WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/shared/package.json packages/shared/
+COPY apps/server/package.json apps/server/
+COPY apps/participant/package.json apps/participant/
+COPY apps/addin/package.json apps/addin/
+RUN pnpm install --frozen-lockfile
+COPY . .
+# The add-in manifest (apps/addin/public/manifest.xml) is generated for this domain.
+ARG APP_DOMAIN=localhost:3443
+ARG PUBLIC_BASE_URL=
+ARG ADDIN_PROVIDER="TK Webwerk"
+RUN APP_DOMAIN="$APP_DOMAIN" PUBLIC_BASE_URL="$PUBLIC_BASE_URL" ADDIN_PROVIDER="$ADDIN_PROVIDER" pnpm build \
+ && pnpm --filter @pulse/server deploy --prod --legacy /out
+
+FROM node:22-alpine
+ENV NODE_ENV=production PORT=3000 HOST=0.0.0.0
+WORKDIR /app
+# Server with its production node_modules; static apps next to it (served by the server under / and /addin/).
+COPY --from=build --chown=node:node /out apps/server
+COPY --from=build --chown=node:node /app/apps/participant/dist apps/participant/dist
+COPY --from=build --chown=node:node /app/apps/addin/dist apps/addin/dist
+USER node
+EXPOSE 3000
+HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
+CMD ["node", "apps/server/dist/index.js"]

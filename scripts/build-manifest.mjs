@@ -24,12 +24,12 @@ function render(origin, name) {
     .replaceAll('{{ORIGIN}}', url.origin)
     .replaceAll('{{ADDIN_ID}}', ADDIN_ID)
     .replaceAll('{{PRODUCT_NAME}}', escapeXml(PRODUCT_NAME))
-    .replaceAll('{{PROVIDER}}', escapeXml(process.env.ADDIN_PROVIDER ?? 'TK Webwerk'));
+    .replaceAll('{{PROVIDER}}', escapeXml(process.env.ADDIN_PROVIDER || 'TK Webwerk'));
   if (/\{\{\w+\}\}/.test(xml)) throw new Error('Unreplaced placeholder in manifest');
   writeFileSync(join(root, 'apps/addin/public', name), xml);
   console.log(`${name}: ${url.origin}`);
 }
 
-const production = process.env.PUBLIC_BASE_URL ?? `https://${process.env.APP_DOMAIN ?? 'localhost:3443'}`;
+const production = process.env.PUBLIC_BASE_URL || `https://${process.env.APP_DOMAIN || 'localhost:3443'}`;
 render(production, 'manifest.xml');
 render('https://localhost:3443', 'manifest.dev.xml');

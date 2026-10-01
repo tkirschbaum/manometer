@@ -150,7 +150,9 @@ export function DashboardScreen() {
                 <li key={item.id} className="flex items-start gap-3 py-4">
                   <span className="tabular w-6 shrink-0 pt-0.5 text-[16px] text-muted">{index + 1}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold text-muted">{t(`type.${item.type ?? item.kind}` as MessageKey)}</p>
+                    <p className="text-[14px] font-semibold text-muted">
+                      {t(`type.${item.type ?? item.kind}` as MessageKey)}
+                    </p>
                     <p className="text-[17px] break-words">{item.prompt}</p>
                     <p className="tabular mt-1 text-[15px] text-muted">
                       {item.responses} {t('dashboard.responses')}
@@ -188,7 +190,9 @@ export function DashboardScreen() {
         open={confirm !== null}
         title={confirm?.kind === 'delete' ? t('dashboard.confirmDelete.title') : t('editor.confirmReset.title')}
         body={confirm?.kind === 'delete' ? t('dashboard.confirmDelete.body') : t('editor.confirmReset.body')}
-        confirmLabel={confirm?.kind === 'delete' ? t('dashboard.confirmDelete.confirm') : t('editor.confirmReset.confirm')}
+        confirmLabel={
+          confirm?.kind === 'delete' ? t('dashboard.confirmDelete.confirm') : t('editor.confirmReset.confirm')
+        }
         onConfirm={() => void act()}
         onCancel={() => {
           setConfirm(null);

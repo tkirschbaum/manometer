@@ -16,9 +16,21 @@ export function ResultsPeek({
   if (!results) return null;
   const items =
     results.type === 'open_text'
-      ? results.entries.slice(0, 8).map((e) => ({ key: e.id, text: e.text, hide: () => { onHideResponse(e.id); } }))
+      ? results.entries.slice(0, 8).map((e) => ({
+          key: e.id,
+          text: e.text,
+          hide: () => {
+            onHideResponse(e.id);
+          },
+        }))
       : results.type === 'word_cloud'
-        ? results.words.slice(0, 12).map((w) => ({ key: w.key, text: `${w.text} (${w.count})`, hide: () => { onHideWord(w.key); } }))
+        ? results.words.slice(0, 12).map((w) => ({
+            key: w.key,
+            text: `${w.text} (${w.count})`,
+            hide: () => {
+              onHideWord(w.key);
+            },
+          }))
         : [];
   return (
     <section className="border-t border-line pt-3">

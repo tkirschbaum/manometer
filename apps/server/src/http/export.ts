@@ -1,9 +1,4 @@
-import {
-  DISPLAY,
-  type QuestionConfig,
-  type ResponsePayload,
-  type SlideItemConfig,
-} from '@pulse/shared';
+import { DISPLAY, type QuestionConfig, type ResponsePayload, type SlideItemConfig } from '@pulse/shared';
 import ExcelJS from 'exceljs';
 import { toCsv } from '../domain/csv';
 import type { StoredPayload } from '../domain/payloads';
@@ -37,7 +32,12 @@ export async function loadExportData(store: Store, deck: DeckRow): Promise<Expor
   const rows = await store.listItems(deck.id);
   const items = await Promise.all(rows.map(async (row) => ({ row, responses: await store.listResponses(row.id) })));
   const nicknames = new Map((await store.listNicknames(deck.id)).map((p) => [p.id, p.nickname]));
-  return { deck, items: items.filter((i) => i.row.kind === 'question'), nicknames, qa: await store.listQaForExport(deck.id) };
+  return {
+    deck,
+    items: items.filter((i) => i.row.kind === 'question'),
+    nicknames,
+    qa: await store.listQaForExport(deck.id),
+  };
 }
 
 function questionOf(config: SlideItemConfig): QuestionConfig | null {
@@ -115,7 +115,10 @@ export function buildCsv(data: ExportData, salt: string, timeZone: string): stri
 }
 
 function sheetName(index: number, label: string, used: Set<string>): string {
-  const clean = label.replace(/[[\]:*?/\\]/g, ' ').replace(/\s+/g, ' ').trim();
+  const clean = label
+    .replace(/[[\]:*?/\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   let name = `${index} ${clean}`.slice(0, 31).trim();
   for (let n = 2; used.has(name.toLowerCase()); n++) name = `${index}-${n} ${clean}`.slice(0, 31).trim();
   used.add(name.toLowerCase());

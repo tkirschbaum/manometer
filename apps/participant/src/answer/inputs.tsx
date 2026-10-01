@@ -48,7 +48,11 @@ export function MultipleChoiceInput({ item, onSubmit, disabled = false }: InputP
       <p className="text-[16px] text-muted" id="mc-hint">
         {item.allowMultiple ? t('mc.chooseUpTo', { n: max }) : t('mc.chooseOne')}
       </p>
-      <div role={item.allowMultiple ? 'group' : 'radiogroup'} aria-describedby="mc-hint" className="mt-3 flex flex-col gap-2.5">
+      <div
+        role={item.allowMultiple ? 'group' : 'radiogroup'}
+        aria-describedby="mc-hint"
+        className="mt-3 flex flex-col gap-2.5"
+      >
         {item.options.map((option) => {
           const on = selected.includes(option.id);
           return (

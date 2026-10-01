@@ -192,7 +192,8 @@ export const en = {
   'editor.copyDetected': 'Copy detected – created as a new question.',
   'editor.duplicateBanner': 'This question exists twice (slide copied?)',
   'editor.duplicateAction': 'Use as a separate question',
-  'editor.deckDeleted': 'Results of this presentation were deleted after {days} days. The questions are still in the file.',
+  'editor.deckDeleted':
+    'Results of this presentation were deleted after {days} days. The questions are still in the file.',
   'editor.webUnsupported': 'PowerPoint on the web is not supported. Please use the desktop app.',
   'editor.responses.one': '{n} response',
   'editor.responses.other': '{n} responses',

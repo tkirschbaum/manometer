@@ -96,7 +96,10 @@ export const nicknameSchema = z.object({
 export const optionRefSchema = z.object({ optionId: shortIdSchema });
 
 export interface ParticipantClientEvents {
-  'response:submit': (payload: z.input<typeof responseSubmitSchema>, ack: (res: Ack<{ mine: MyResponseState }>) => void) => void;
+  'response:submit': (
+    payload: z.input<typeof responseSubmitSchema>,
+    ack: (res: Ack<{ mine: MyResponseState }>) => void,
+  ) => void;
   'item:mine': (payload: z.input<typeof itemRefSchema>, ack: (res: Ack<{ mine: MyResponseState }>) => void) => void;
   'qa:submit': (payload: z.input<typeof qaSubmitSchema>, ack: (res: Ack<{ id: string }>) => void) => void;
   'qa:upvote': (payload: z.input<typeof qaRefSchema>, ack: (res: Ack) => void) => void;

@@ -35,8 +35,16 @@ import { initialActiveState, toPublicItemView } from './views';
 type Args<E, K extends keyof E> = E[K] extends (...args: infer A) => void ? A : never;
 
 export interface Broadcaster {
-  toPresenters<K extends keyof PresenterServerEvents>(deckId: string, event: K, ...args: Args<PresenterServerEvents, K>): void;
-  toAudience<K extends keyof ParticipantServerEvents>(deckId: string, event: K, ...args: Args<ParticipantServerEvents, K>): void;
+  toPresenters<K extends keyof PresenterServerEvents>(
+    deckId: string,
+    event: K,
+    ...args: Args<PresenterServerEvents, K>
+  ): void;
+  toAudience<K extends keyof ParticipantServerEvents>(
+    deckId: string,
+    event: K,
+    ...args: Args<ParticipantServerEvents, K>
+  ): void;
   toParticipant<K extends keyof ParticipantServerEvents>(
     deckId: string,
     participantId: string,
@@ -513,7 +521,11 @@ export class Hub {
     }
   }
 
-  async hideResponse(deckId: string, itemId: string, target: { responseId: number } | { wordKey: string }): Promise<void> {
+  async hideResponse(
+    deckId: string,
+    itemId: string,
+    target: { responseId: number } | { wordKey: string },
+  ): Promise<void> {
     await this.withItem(deckId, itemId, async (deck, item) => {
       if ('responseId' in target) {
         await this.store.hideResponse(itemId, target.responseId);
@@ -731,7 +743,9 @@ export class Hub {
     }, this.timing.presenterResultsThrottleMs);
     item.presenterThrottle.schedule();
     const phoneAllowed =
-      question.type === 'quiz' ? false : question.showOnPhone && (question.resultsVisibility === 'live' || item.revealed);
+      question.type === 'quiz'
+        ? false
+        : question.showOnPhone && (question.resultsVisibility === 'live' || item.revealed);
     if (phoneAllowed && deck.activeItemId === item.config.id) {
       item.participantThrottle ??= trailingThrottle(() => {
         const q = item.question;
@@ -789,9 +803,17 @@ export class Hub {
   participantState(deck: DeckRuntime): ParticipantDeckState {
     const active = deck.activeItemId ? deck.items.get(deck.activeItemId) : undefined;
     return {
-      deck: { title: deck.settings.title, slideLanguage: deck.settings.slideLanguage, qaEnabled: deck.settings.qaEnabled },
+      deck: {
+        title: deck.settings.title,
+        slideLanguage: deck.settings.slideLanguage,
+        qaEnabled: deck.settings.qaEnabled,
+      },
       activeItem: active
-        ? toPublicItemView(active.config, { state: active.state, revealed: active.revealed, phaseEndsAt: active.phaseEndsAt })
+        ? toPublicItemView(active.config, {
+            state: active.state,
+            revealed: active.revealed,
+            phaseEndsAt: active.phaseEndsAt,
+          })
         : null,
       serverNow: this.now(),
     };
@@ -815,7 +837,8 @@ export class Hub {
     const submissions: ResponsePayload[] = item.responses
       .filter((r) => r.participantId === participantId)
       .map((r) => toPublicPayload(r.payload));
-    const quizResult = item.quiz && item.state === 'reveal' ? this.quizResultFor(item, participantId, await this.ranking(deck)) : null;
+    const quizResult =
+      item.quiz && item.state === 'reveal' ? this.quizResultFor(item, participantId, await this.ranking(deck)) : null;
     return { itemId: item.config.id, submissions, quizResult };
   }
 
@@ -847,8 +870,7 @@ export class Hub {
 
     const stored = this.validatePayload(question, input.payload);
     const own = item.responses.filter((r) => r.participantId === participantId);
-    const limit =
-      question.type === 'word_cloud' || question.type === 'open_text' ? question.entriesPerParticipant : 1;
+    const limit = question.type === 'word_cloud' || question.type === 'open_text' ? question.entriesPerParticipant : 1;
     if (own.length >= limit) throw new HubError(limit === 1 ? 'ALREADY_ANSWERED' : 'LIMIT_REACHED');
 
     let points: number | null = null;

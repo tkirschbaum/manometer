@@ -3,7 +3,10 @@ import { expect, test } from '@playwright/test';
 import { join, openPresenter, translator } from './helpers';
 
 test.describe('participant flows with the add-in harness as presenter', () => {
-  test('multiple choice: join by code entry, vote, presenter sees the result, duplicate prevented', async ({ page, browser }, info) => {
+  test('multiple choice: join by code entry, vote, presenter sees the result, duplicate prevented', async ({
+    page,
+    browser,
+  }, info) => {
     const t = translator(info);
     const presenter = await openPresenter(browser, {
       type: 'multiple_choice',
@@ -33,7 +36,11 @@ test.describe('participant flows with the add-in harness as presenter', () => {
 
   test('word cloud: several entries up to the limit', async ({ page, browser }, info) => {
     const t = translator(info);
-    const presenter = await openPresenter(browser, { type: 'word_cloud', prompt: 'Ein Wort zur Vorlesung', wordEntries: 2 });
+    const presenter = await openPresenter(browser, {
+      type: 'word_cloud',
+      prompt: 'Ein Wort zur Vorlesung',
+      wordEntries: 2,
+    });
     await join(page, presenter.code);
     const input = page.getByLabel(t('wc.placeholder'));
     await input.fill('Neugier');
@@ -141,9 +148,15 @@ test.describe('accessibility (axe)', () => {
   test('join, question and quiz screens have no serious or critical violations', async ({ page, browser }, info) => {
     const t = translator(info);
     const check = async (): Promise<void> => {
+      // Colour contrast is only meaningful once fade/slide transitions have finished.
+      await page.waitForFunction(() =>
+        document
+          .getAnimations()
+          .every((a) => a.playState !== 'running' || a.effect?.getComputedTiming().endTime === Infinity),
+      );
       const result = await new AxeBuilder({ page }).analyze();
       const bad = result.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-      expect(bad.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+      expect(bad.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(' ')).join(', ')})`)).toEqual([]);
     };
     await page.goto('/');
     await check();

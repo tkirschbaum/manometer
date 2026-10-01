@@ -69,7 +69,10 @@ export function EmptyState({
               onLink(latest);
             }}
           >
-            {t('editor.empty.connect', { title: name(latest), code: latest.joinCode ? formatJoinCode(latest.joinCode) : '–' })}
+            {t('editor.empty.connect', {
+              title: name(latest),
+              code: latest.joinCode ? formatJoinCode(latest.joinCode) : '–',
+            })}
           </Button>
           <div className="flex flex-wrap gap-2">
             {candidates.length > 1 ? (

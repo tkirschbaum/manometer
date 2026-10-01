@@ -1,0 +1,35 @@
+# Caddy 2: automatic HTTPS for {$APP_DOMAIN}, reverse proxy to the server (WebSockets work automatically).
+# Access logs are disabled on purpose (DSGVO, master prompt §9): there is no `log` directive.
+{
+	admin off
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# `defer` applies the headers after the proxy, so they replace the server's own copies (no duplicates).
+	header {
+		defer
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# Add-in (runs inside the Office webview): Office.js from Microsoft's CDN, no frame restrictions.
+	@addin path /addin /addin/*
+	header @addin {
+		defer
+		Content-Security-Policy "default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com; connect-src 'self' wss://{$APP_DOMAIN} https://appsforoffice.microsoft.com; img-src 'self' data: https://appsforoffice.microsoft.com; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'"
+	}
+
+	# Everything else (participant app, dashboard, API): strict.
+	@other not path /addin /addin/*
+	header @other {
+		defer
+		Content-Security-Policy "default-src 'self'; connect-src 'self' wss://{$APP_DOMAIN}; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		X-Frame-Options "DENY"
+	}
+
+	reverse_proxy server:3000
+}

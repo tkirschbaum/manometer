@@ -6,7 +6,15 @@ import { Stage } from './Stage';
  * Read view (§6.6/§6.7). Renders from the file first (join strip, prompt) and fills in live data when the
  * presenter socket is connected, so the slide is never blank, even offline (principle 4).
  */
-export function SlideshowStage({ controller, state, live }: { controller: AddinController; state: ControllerState; live: LiveState }) {
+export function SlideshowStage({
+  controller,
+  state,
+  live,
+}: {
+  controller: AddinController;
+  state: ControllerState;
+  live: LiveState;
+}) {
   const { deck, item: draft } = state.settings;
   const config = controller.config;
   const connected = live.status === 'connected';

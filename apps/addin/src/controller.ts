@@ -125,18 +125,26 @@ export class AddinController {
     void this.host.getView().then((view) => {
       this.setView(view);
     });
-    this.cleanups.push(this.host.onViewChange((view) => {
-      this.setView(view);
-    }));
-    this.cleanups.push(this.host.onSelectionChange(() => {
-      if (this.state.view === 'read') void this.checkScreen();
-    }));
-    this.cleanups.push(this.live.subscribe(() => {
-      this.onLiveChange();
-    }));
-    this.cleanups.push(this.live.onConnect(() => {
-      this.onConnect();
-    }));
+    this.cleanups.push(
+      this.host.onViewChange((view) => {
+        this.setView(view);
+      }),
+    );
+    this.cleanups.push(
+      this.host.onSelectionChange(() => {
+        if (this.state.view === 'read') void this.checkScreen();
+      }),
+    );
+    this.cleanups.push(
+      this.live.subscribe(() => {
+        this.onLiveChange();
+      }),
+    );
+    this.cleanups.push(
+      this.live.onConnect(() => {
+        this.onConnect();
+      }),
+    );
     const deck = this.state.settings.deck;
     if (deck) {
       this.live.setItem(this.state.settings.item?.id ?? null);
@@ -171,7 +179,12 @@ export class AddinController {
   private enterEdit(): void {
     const { deck } = this.state.settings;
     if (deck) {
-      const link: DeckLink = { deckId: deck.id, secret: deck.secret, joinCode: deck.joinCode, title: deck.settings.title };
+      const link: DeckLink = {
+        deckId: deck.id,
+        secret: deck.secret,
+        joinCode: deck.joinCode,
+        title: deck.settings.title,
+      };
       deckRegistry.remember(link);
       void this.host.readDocumentDeck().then((existing) => {
         if (existing?.deckId !== deck.id) void this.host.writeDocumentDeck(link);
@@ -230,7 +243,10 @@ export class AddinController {
 
   createDeck(): void {
     const link: DeckLink = { deckId: newUuid(), secret: newDeckSecret(), joinCode: '', title: '' };
-    const settings: DeckSettings = { ...defaultDeckSettings, slideLanguage: languageFromLocale(this.host.displayLanguage) };
+    const settings: DeckSettings = {
+      ...defaultDeckSettings,
+      slideLanguage: languageFromLocale(this.host.displayLanguage),
+    };
     this.update((s) => ({ ...s, deck: { id: link.deckId, secret: link.secret, joinCode: '', settings, baseUrl: '' } }));
     void this.host.writeDocumentDeck(link);
     deckRegistry.remember(link);
@@ -398,9 +414,16 @@ export class AddinController {
       JSON.stringify(settings) !== JSON.stringify(local.settings)
     ) {
       this.update((s) =>
-        s.deck ? { ...s, deck: { ...s.deck, joinCode: deckState.joinCode, baseUrl: deckState.publicBaseUrl, settings } } : s,
+        s.deck
+          ? { ...s, deck: { ...s.deck, joinCode: deckState.joinCode, baseUrl: deckState.publicBaseUrl, settings } }
+          : s,
       );
-      deckRegistry.remember({ deckId: local.id, secret: local.secret, joinCode: deckState.joinCode, title: settings.title });
+      deckRegistry.remember({
+        deckId: local.id,
+        secret: local.secret,
+        joinCode: deckState.joinCode,
+        title: settings.title,
+      });
     }
   }
 

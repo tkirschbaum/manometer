@@ -8,10 +8,10 @@
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "build": "pnpm manifest:build && pnpm -r --filter ./apps/* build",
+    "build": "pnpm manifest:build && pnpm -r --filter \"./apps/*\" build",
     "start": "node apps/server/dist/index.js",
     "certs": "office-addin-dev-certs install",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -22,7 +22,11 @@
     "db:migrate": "pnpm --filter @pulse/server db:migrate",
     "manifest:build": "node scripts/build-manifest.mjs",
     "manifest:validate": "office-addin-manifest validate apps/addin/public/manifest.xml",
-    "check": "pnpm typecheck && pnpm lint && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
+    "setup:local": "node scripts/setup-local.mjs",
+    "sideload": "office-addin-dev-settings sideload apps/addin/public/manifest.dev.xml desktop --app PowerPoint",
+    "addin:register": "office-addin-dev-settings register apps/addin/public/manifest.dev.xml",
+    "addin:unregister": "office-addin-dev-settings unregister apps/addin/public/manifest.dev.xml"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -37,6 +41,7 @@
     "socket.io-client": "^4.8.4",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "office-addin-dev-settings": "^3.0.1"
   }
 }

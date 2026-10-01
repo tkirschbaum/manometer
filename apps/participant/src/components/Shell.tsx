@@ -4,7 +4,15 @@ import { navigate } from '../lib/router';
 import { ProductMark } from './ProductMark';
 
 /** Single column, max 520 px, left aligned (§11.5). Footer with privacy link and language toggle on every screen. */
-export function Shell({ children, banner, title }: { children: ReactNode; banner?: ReactNode; title?: string | null | undefined }) {
+export function Shell({
+  children,
+  banner,
+  title,
+}: {
+  children: ReactNode;
+  banner?: ReactNode;
+  title?: string | null | undefined;
+}) {
   const { t, language, setLanguage } = useI18n();
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[520px] flex-col">

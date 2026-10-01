@@ -6,7 +6,7 @@ export type T = (key: MessageKey, vars?: Record<string, string | number>) => str
 
 /** Translator for the project's locale, so assertions work in DE and EN. */
 export function translator(info: TestInfo): T {
-  const locale = String(info.project.use.locale ?? 'de');
+  const locale = info.project.use.locale ?? 'de';
   const dict = dictionaries[locale.startsWith('de') ? 'de' : 'en'];
   return (key, vars) => dict[key].replace(/\{(\w+)\}/g, (m, name: string) => String(vars?.[name] ?? m));
 }

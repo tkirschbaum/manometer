@@ -5,7 +5,13 @@ import type { ItemLiveState } from '../live/live';
 import { Stage } from './Stage';
 
 const deckId = '11111111-1111-4111-8111-111111111111';
-const base = { deckId, schemaVersion: 1 as const, kind: 'question' as const, resultsVisibility: 'live' as const, showOnPhone: false };
+const base = {
+  deckId,
+  schemaVersion: 1 as const,
+  kind: 'question' as const,
+  resultsVisibility: 'live' as const,
+  showOnPhone: false,
+};
 const id = (n: number): string => `00000000-0000-4000-8000-00000000000${n}`;
 
 const SAMPLES: Record<string, SlideItemConfig> = {
@@ -23,7 +29,13 @@ const SAMPLES: Record<string, SlideItemConfig> = {
     allowMultiple: false,
     correctOptionIds: ['b'],
   },
-  word_cloud: { ...base, id: id(2), type: 'word_cloud', prompt: 'Ein Wort zur heutigen Vorlesung', entriesPerParticipant: 3 },
+  word_cloud: {
+    ...base,
+    id: id(2),
+    type: 'word_cloud',
+    prompt: 'Ein Wort zur heutigen Vorlesung',
+    entriesPerParticipant: 3,
+  },
   open_text: { ...base, id: id(3), type: 'open_text', prompt: 'Was war heute unklar?', entriesPerParticipant: 1 },
   scale: {
     ...base,

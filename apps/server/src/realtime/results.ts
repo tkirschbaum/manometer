@@ -26,7 +26,12 @@ export function computeResults(config: QuestionConfig, list: readonly LiveRespon
     case 'quiz': {
       const counts: Record<string, number> = Object.fromEntries(config.options.map((o) => [o.id, 0]));
       for (const r of visible) {
-        const ids = r.payload.type === 'multiple_choice' ? r.payload.optionIds : r.payload.type === 'quiz' ? [r.payload.optionId] : [];
+        const ids =
+          r.payload.type === 'multiple_choice'
+            ? r.payload.optionIds
+            : r.payload.type === 'quiz'
+              ? [r.payload.optionId]
+              : [];
         for (const id of ids) if (id in counts) counts[id] = (counts[id] ?? 0) + 1;
       }
       return config.type === 'quiz' ? { ...base, type: 'quiz', counts } : { ...base, type: 'multiple_choice', counts };
@@ -48,7 +53,9 @@ export function computeResults(config: QuestionConfig, list: readonly LiveRespon
     }
     case 'open_text': {
       const entries = visible
-        .filter((r): r is LiveResponse & { payload: { type: 'open_text'; text: string } } => r.payload.type === 'open_text')
+        .filter(
+          (r): r is LiveResponse & { payload: { type: 'open_text'; text: string } } => r.payload.type === 'open_text',
+        )
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, DISPLAY.openTextMaxSent)
         .map((r) => ({ id: String(r.id ?? ''), text: r.payload.text, at: r.createdAt }))

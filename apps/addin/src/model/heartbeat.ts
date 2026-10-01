@@ -20,7 +20,11 @@ export class Heartbeat {
       const now = Date.now();
       const key = `${STORAGE_KEYS.heartbeatPrefix}${this.nonce}`;
       try {
-        if (itemId) window.localStorage.setItem(key, JSON.stringify({ nonce: this.nonce, itemId, startedAt: this.startedAt, t: now }));
+        if (itemId)
+          window.localStorage.setItem(
+            key,
+            JSON.stringify({ nonce: this.nonce, itemId, startedAt: this.startedAt, t: now }),
+          );
         else window.localStorage.removeItem(key);
         let duplicate = false;
         for (let i = 0; i < window.localStorage.length; i++) {
@@ -32,7 +36,8 @@ export class Heartbeat {
             continue;
           }
           const other = parsed.data;
-          if (itemId && other.itemId === itemId && now - other.t < 5000 && other.startedAt < this.startedAt) duplicate = true;
+          if (itemId && other.itemId === itemId && now - other.t < 5000 && other.startedAt < this.startedAt)
+            duplicate = true;
         }
         onDuplicate(duplicate);
       } catch {

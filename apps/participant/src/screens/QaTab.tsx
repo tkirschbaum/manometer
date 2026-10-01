@@ -85,7 +85,10 @@ export function QaTab({ state, session }: { state: SessionState; session: Sessio
           const voted = state.qaVoted.has(q.id);
           const mine = state.qaMine.has(q.id);
           return (
-            <li key={q.id} className={`fade-in flex gap-3 rounded-brand border border-line p-3 ${q.answered ? 'opacity-55' : ''}`}>
+            <li
+              key={q.id}
+              className={`fade-in flex gap-3 rounded-brand border border-line p-3 ${q.answered ? 'opacity-55' : ''}`}
+            >
               <button
                 type="button"
                 aria-pressed={voted}
