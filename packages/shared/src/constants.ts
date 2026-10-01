@@ -26,7 +26,8 @@ export const LIMITS = {
 export const TIMING = {
   /** Editor writes to file and server this long after the last change. */
   editorDebounceMs: 600,
-  presenterResultsThrottleMs: 250,
+  /** §5.4: at most 4 updates per second. 250 ms plus a 10 ms margin so delivery jitter never squeezes a fifth update into one second. */
+  presenterResultsThrottleMs: 260,
   participantResultsThrottleMs: 1000,
   participantCountDebounceMs: 1000,
   qaThrottleMs: 250,
