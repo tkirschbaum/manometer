@@ -1,12 +1,12 @@
 import { formatJoinCode, type Translate } from '@pulse/shared';
-import { useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { AddinController, ControllerState } from '../controller';
 import type { LiveState } from '../live/live';
-import { SLIDE_KINDS, kindOf, type SlideKind } from '../model/draft';
+import { SLIDE_KINDS, kindOf, previewConfig, type SlideKind } from '../model/draft';
 import { Stage } from '../stage/Stage';
+import { liveStageData } from '../stage/SlideshowStage';
 import { Button, ConfirmDialog, Menu, MenuItem, Toast } from '../ui/controls';
-import { ChevronDownIcon, EyeIcon, KindIcon, MoreIcon } from '../ui/icons';
-import { EmptyState } from './EmptyState';
+import { CheckIcon, ChevronDownIcon, KindIcon, MoreIcon, PencilIcon } from '../ui/icons';
 import { ItemForm } from './ItemForm';
 import { KindPicker, kindLabel } from './KindPicker';
 import { ResultsPeek } from './ResultsPeek';
@@ -27,7 +27,28 @@ function isMac(): boolean {
   return /Mac/i.test(navigator.platform) || /Macintosh/i.test(navigator.userAgent);
 }
 
-/** Edit-mode UI inside the frame (§6.8). */
+function subscribeResize(callback: () => void): () => void {
+  window.addEventListener('resize', callback);
+  return () => {
+    window.removeEventListener('resize', callback);
+  };
+}
+
+/** The editor sits inside the frame on the slide; with enough room it shows form and preview side by side. */
+function useWide(): boolean {
+  return useSyncExternalStore(
+    subscribeResize,
+    () => window.innerWidth >= 760 && window.innerHeight >= 340,
+    () => false,
+  );
+}
+
+/**
+ * Edit-mode UI inside the frame (§6.8). Three states:
+ *  1. fresh frame → "What would you like to ask?" (type cards; the deck is linked/created automatically),
+ *  2. editing → form (+ live preview when wide), "Done" returns to the slide,
+ *  3. done → the slide exactly as in the slideshow; click anywhere to edit again.
+ */
 export function Editor({
   controller,
   state,
@@ -41,12 +62,8 @@ export function Editor({
   t: Translate;
   webUnsupported: boolean;
 }) {
-  const { settings } = state;
-  const [menu, setMenu] = useState<'kind' | 'more' | null>(null);
-  const [preview, setPreview] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [confirm, setConfirm] = useState<{ kind: 'reset' } | { kind: 'changeKind'; to: SlideKind } | null>(null);
-  const [copyFallback, setCopyFallback] = useState<string | null>(null);
+  // null = not decided by the user yet: incomplete slides open in the form, finished ones show the slide.
+  const [editing, setEditing] = useState<boolean | null>(null);
 
   if (webUnsupported) {
     return (
@@ -58,32 +75,166 @@ export function Editor({
     );
   }
 
-  const deck = settings.deck;
-  if (!deck) {
-    return (
-      <EmptyState
-        candidates={state.candidates}
-        onCreate={() => {
-          controller.createDeck();
-        }}
-        onLink={(link) => {
-          controller.linkDeck(link);
-        }}
-        t={t}
-      />
-    );
-  }
+  const { settings } = state;
   const draft = settings.item;
+  const interaction = {
+    onPointerDownCapture: () => void controller.onEditorInteraction(),
+    onFocusCapture: () => void controller.onEditorInteraction(),
+  };
+
   if (!draft) {
     return (
-      <KindPicker
-        onPick={(kind) => {
-          controller.setKind(kind);
-        }}
-        t={t}
-      />
+      <div className="h-full" {...interaction}>
+        <KindPicker
+          onPick={(kind) => {
+            setEditing(true);
+            void controller.pickKind(kind);
+          }}
+          t={t}
+          deckChoice={state.deckChoice}
+          linked={settings.deck !== null}
+          onChooseDeck={(entry) => {
+            controller.chooseDeck(entry);
+          }}
+        />
+      </div>
     );
   }
+
+  const needsSetup =
+    controller.missing.length > 0 || (draft.kind === 'qa_wall' && !(settings.deck?.settings.qaEnabled ?? false));
+  const isEditing = editing ?? needsSetup;
+
+  return (
+    <div className="h-full" {...interaction}>
+      {isEditing ? (
+        <EditView
+          controller={controller}
+          state={state}
+          live={live}
+          t={t}
+          onDone={() => {
+            setEditing(false);
+          }}
+        />
+      ) : (
+        <SlideView
+          controller={controller}
+          state={state}
+          live={live}
+          t={t}
+          onEdit={() => {
+            setEditing(true);
+          }}
+        />
+      )}
+      <Notices state={state} t={t} />
+    </div>
+  );
+}
+
+function Notices({ state, t }: { state: ControllerState; t: Translate }) {
+  return (
+    <Toast
+      message={
+        state.toast === 'copyDetected'
+          ? t('editor.copyDetected')
+          : state.toast === 'linkCopied'
+            ? (state.copyFallback ?? t('editor.linkCopied'))
+            : null
+      }
+    />
+  );
+}
+
+/** The slide as it will be presented (live data, no sample values). Click anywhere to edit. */
+function SlideView({
+  controller,
+  state,
+  live,
+  t,
+  onEdit,
+}: {
+  controller: AddinController;
+  state: ControllerState;
+  live: LiveState;
+  t: Translate;
+  onEdit: () => void;
+}) {
+  return (
+    <div className="group relative h-full cursor-pointer" onClick={onEdit}>
+      <Stage data={liveStageData(state, live, controller.config)} />
+      {state.duplicate ? (
+        <div className="absolute inset-x-3 top-3 flex items-center gap-2 rounded-brand border border-line bg-paper px-3 py-1.5 text-[13px] text-ink">
+          <span className="min-w-0 flex-1">{t('editor.duplicateBanner')}</span>
+          <button
+            type="button"
+            className="font-semibold text-navy underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              controller.fork();
+            }}
+          >
+            {t('editor.duplicateAction')}
+          </button>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+        className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-brand border border-line bg-paper/95 px-3 py-1.5 text-[13px] font-semibold text-navy transition-colors group-hover:border-navy group-hover:bg-navy group-hover:text-paper"
+      >
+        <PencilIcon size={15} />
+        {t('editor.edit')}
+      </button>
+    </div>
+  );
+}
+
+function EditView({
+  controller,
+  state,
+  live,
+  t,
+  onDone,
+}: {
+  controller: AddinController;
+  state: ControllerState;
+  live: LiveState;
+  t: Translate;
+  onDone: () => void;
+}) {
+  const { settings } = state;
+  const wide = useWide();
+  const [menu, setMenu] = useState<'kind' | 'more' | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [confirm, setConfirm] = useState<{ kind: 'reset' } | { kind: 'changeKind'; to: SlideKind } | null>(null);
+  const confirmOpen = useRef(false);
+  useEffect(() => {
+    confirmOpen.current = confirm !== null;
+  }, [confirm]);
+
+  // Clicking outside the frame (back on the PowerPoint slide) shows the finished slide again.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onBlur = (): void => {
+      timer = setTimeout(() => {
+        if (!document.hasFocus() && !confirmOpen.current && controller.missing.length === 0) onDone();
+      }, 250);
+    };
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      if (timer) clearTimeout(timer);
+    };
+  }, [controller, onDone]);
+
+  const deck = settings.deck;
+  const draft = settings.item;
+  if (!deck || !draft) return null;
 
   const kind = kindOf(draft);
   const config = controller.config;
@@ -94,15 +245,17 @@ export function Editor({
   const closed = live.item?.state === 'closed';
   const hasContent = draft.prompt.trim().length > 0 || draft.options.some((o) => o.label.trim());
 
-  const status = state.saving
-    ? t('editor.status.saving')
-    : missing.length > 0
-      ? t('editor.status.incomplete', { missing: missing.map((m) => t(m)).join(', ') })
-      : !connected
-        ? t('editor.status.offline')
-        : synced || !isQuestion
-          ? t('editor.status.saved')
-          : t('editor.status.savedLocal');
+  let status: ReactNode;
+  if (state.saving || (connected && isQuestion && missing.length === 0 && !synced)) status = t('editor.status.saving');
+  else if (missing.length > 0) status = t('editor.status.incomplete', { missing: missing.map((m) => t(m)).join(', ') });
+  else if (!connected) status = t('editor.status.offline');
+  else
+    status = (
+      <span className="inline-flex items-center gap-1 text-navy">
+        <CheckIcon size={14} strokeWidth={2.5} />
+        {t('editor.status.ready')}
+      </span>
+    );
 
   const changeKind = (to: SlideKind): void => {
     setMenu(null);
@@ -111,14 +264,43 @@ export function Editor({
     else controller.setKind(to);
   };
 
-  const sample = previewResults(config);
+  const shownConfig =
+    config ??
+    previewConfig(draft, deck.id, {
+      prompt: t('editor.promptPlaceholder'),
+      option: (n) => t('editor.optionPlaceholder', { n }),
+      statement: (n) => t('editor.statementPlaceholder', { n }),
+    });
+  const sample = previewResults(shownConfig);
+  const preview = (
+    <div className="flex min-h-0 flex-col gap-1.5">
+      <span className="text-[12px] font-semibold text-muted">{t('editor.previewSample')}</span>
+      <div className="aspect-video w-full overflow-hidden rounded-brand border border-line">
+        <Stage
+          data={{
+            language: deck.settings.slideLanguage,
+            theme: deck.settings.theme,
+            showQr: deck.settings.showQr,
+            joinCode: deck.joinCode || '000000',
+            baseUrl: deck.baseUrl || window.location.origin,
+            qaEnabled: deck.settings.qaEnabled,
+            config: shownConfig,
+            draft,
+            item: sample.item,
+            results: sample.results,
+            participants: 42,
+            leaderboard: sample.leaderboard,
+            qa: sample.qa,
+            connected: true,
+            clockOffset: 0,
+          }}
+        />
+      </div>
+    </div>
+  );
 
   return (
-    <div
-      className="flex h-full flex-col"
-      onPointerDownCapture={() => void controller.onEditorInteraction()}
-      onFocusCapture={() => void controller.onEditorInteraction()}
-    >
+    <div className="flex h-full flex-col">
       <header className="flex flex-none items-center gap-1.5 border-b border-line px-2 py-1.5">
         <div className="relative">
           <Button
@@ -158,12 +340,12 @@ export function Editor({
           <Button
             variant="quiet"
             title={t('editor.copyLink')}
+            aria-label={`${t('stage.code')} ${formatJoinCode(deck.joinCode)}: ${t('editor.copyLink')}`}
             onClick={() => {
               const url = controller.joinUrl();
               if (url) {
                 void copyText(url).then((ok) => {
-                  setCopyFallback(ok ? null : url);
-                  controller.showToast('linkCopied');
+                  controller.notifyLinkCopied(ok ? null : url);
                 });
               }
             }}
@@ -173,20 +355,11 @@ export function Editor({
               aria-hidden="true"
             />
             <span className="tabular">
-              {t('stage.code')} {formatJoinCode(deck.joinCode)}
+              {wide ? `${t('stage.code')} ` : ''}
+              {formatJoinCode(deck.joinCode)}
             </span>
           </Button>
         ) : null}
-        <Button
-          variant={preview ? 'primary' : 'quiet'}
-          aria-pressed={preview}
-          onClick={() => {
-            setPreview(!preview);
-          }}
-        >
-          <EyeIcon size={16} />
-          {t('editor.preview')}
-        </Button>
         <div className="relative">
           <Button
             variant="quiet"
@@ -254,6 +427,9 @@ export function Editor({
             </MenuItem>
           </Menu>
         </div>
+        <Button variant="primary" onClick={onDone}>
+          {t('editor.done')}
+        </Button>
       </header>
 
       {state.retentionNotice ? (
@@ -280,100 +456,61 @@ export function Editor({
           </button>
         </Banner>
       ) : null}
-      {state.showSaveReminder ? (
-        <Banner
-          onClose={() => {
-            controller.dismissSaveReminder();
-          }}
-          closeLabel={t('common.close')}
-        >
-          {t('editor.saveReminder', { shortcut: isMac() ? 'Cmd+S' : 'Strg+S' })}
-        </Banner>
-      ) : null}
 
-      <main className="min-h-0 flex-1 overflow-auto px-3 py-3">
-        {preview ? (
-          <div
-            className="mx-auto aspect-video overflow-hidden rounded-brand border border-line"
-            style={{ width: 'min(100%, calc((100vh - 120px) * 16 / 9))' }}
-          >
-            <Stage
-              data={{
-                language: deck.settings.slideLanguage,
-                theme: deck.settings.theme,
-                showQr: deck.settings.showQr,
-                joinCode: deck.joinCode || '000000',
-                baseUrl: deck.baseUrl || window.location.origin,
-                qaEnabled: deck.settings.qaEnabled,
-                config,
-                draft,
-                item: sample.item,
-                results: sample.results,
-                participants: 42,
-                leaderboard: sample.leaderboard,
-                qa: sample.qa,
-                connected: true,
-                clockOffset: 0,
-              }}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {showSettings ? (
-              <SettingsPanel
-                settings={deck.settings}
-                onChange={(patch) => {
-                  controller.updateDeckSettings(patch);
-                }}
-                onClose={() => {
-                  setShowSettings(false);
-                }}
-                t={t}
-              />
-            ) : null}
-            <ItemForm
-              draft={draft}
-              onChange={(fn) => {
-                controller.updateDraft(fn);
-              }}
-              deckSettings={deck.settings}
-              onDeckSettings={(patch) => {
+      <main
+        className={`min-h-0 flex-1 ${wide ? 'grid grid-cols-[minmax(300px,46%)_minmax(0,1fr)] gap-4 overflow-hidden px-3 py-3' : 'overflow-auto px-3 py-3'}`}
+      >
+        <div className={`flex flex-col gap-4 ${wide ? 'min-h-0 overflow-auto pr-1' : ''}`}>
+          {showSettings ? (
+            <SettingsPanel
+              settings={deck.settings}
+              onChange={(patch) => {
                 controller.updateDeckSettings(patch);
+              }}
+              onClose={() => {
+                setShowSettings(false);
               }}
               t={t}
             />
-            {isQuestion ? (
-              <ResultsPeek
-                results={live.results}
-                t={t}
-                onHideResponse={(id) => {
-                  controller.hideResponse(id);
-                }}
-                onHideWord={(key) => {
-                  controller.hideWord(key);
-                }}
-              />
-            ) : null}
-          </div>
-        )}
+          ) : null}
+          <ItemForm
+            key={`${draft.id}-${kind}`}
+            draft={draft}
+            onChange={(fn) => {
+              controller.updateDraft(fn);
+            }}
+            deckSettings={deck.settings}
+            onDeckSettings={(patch) => {
+              controller.updateDeckSettings(patch);
+            }}
+            t={t}
+          />
+          {isQuestion ? (
+            <ResultsPeek
+              results={live.results}
+              t={t}
+              onHideResponse={(id) => {
+                controller.hideResponse(id);
+              }}
+              onHideWord={(key) => {
+                controller.hideWord(key);
+              }}
+            />
+          ) : null}
+        </div>
+        {wide ? preview : null}
       </main>
 
       <footer
-        className="flex flex-none items-center gap-2 border-t border-line px-3 py-1.5 text-[12px] text-muted"
+        className="flex flex-none items-center justify-between gap-3 border-t border-line px-3 py-1.5 text-[12px] text-muted"
         role="status"
       >
         <span className="min-w-0 truncate">{status}</span>
+        {state.showSaveReminder ? (
+          <span className="shrink-0">{t('editor.saveHint', { shortcut: isMac() ? 'Cmd+S' : 'Strg+S' })}</span>
+        ) : null}
       </footer>
 
-      <Toast
-        message={
-          state.toast === 'copyDetected'
-            ? t('editor.copyDetected')
-            : state.toast === 'linkCopied'
-              ? (copyFallback ?? t('editor.linkCopied'))
-              : null
-        }
-      />
       <ConfirmDialog
         open={confirm !== null}
         title={confirm?.kind === 'reset' ? t('editor.confirmReset.title') : t('editor.confirmKind.title')}
@@ -393,25 +530,12 @@ export function Editor({
   );
 }
 
-function Banner({
-  children,
-  onClose,
-  closeLabel,
-}: {
-  children: React.ReactNode;
-  onClose?: () => void;
-  closeLabel?: string;
-}) {
+function Banner({ children, onClose, closeLabel }: { children: ReactNode; onClose?: () => void; closeLabel?: string }) {
   return (
     <div className="flex flex-none items-start gap-2 border-b border-line bg-mist px-3 py-1.5" role="status">
       <p className="min-w-0 flex-1">{children}</p>
       {onClose ? (
-        <button
-          type="button"
-          onClick={onClose}
-          className="shrink-0 font-semibold text-navy underline"
-          aria-label={closeLabel}
-        >
+        <button type="button" onClick={onClose} className="shrink-0 font-semibold text-navy underline">
           {closeLabel}
         </button>
       ) : null}

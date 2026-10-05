@@ -9,6 +9,12 @@ export interface DeckLink {
   title: string;
 }
 
+/** Result of reading the presentation-level deck link: `supported` is false when the store is unavailable. */
+export interface DocumentDeck {
+  supported: boolean;
+  link: DeckLink | null;
+}
+
 /**
  * Everything the add-in needs from its host. Only src/office/ talks to Office.js (§6.9);
  * the harness implements the same interface in memory for development without PowerPoint.
@@ -27,6 +33,6 @@ export interface OfficeHost {
   onSelectionChange: (handler: () => void) => () => void;
   openBrowserWindow: (url: string) => void;
   /** Document-level store for deck credentials (§6.4 path 1). Feature-detected; may be unsupported. */
-  readDocumentDeck: () => Promise<DeckLink | null>;
+  readDocumentDeck: () => Promise<DocumentDeck>;
   writeDocumentDeck: (link: DeckLink) => Promise<boolean>;
 }

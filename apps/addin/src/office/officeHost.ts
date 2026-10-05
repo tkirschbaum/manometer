@@ -1,7 +1,7 @@
 import { ADDIN_SETTINGS_KEY } from '@pulse/shared';
 import { deckLinkSchema } from '../model/schemas';
 import { officeCall, withTimeout } from './promise';
-import type { DeckLink, OfficeHost, Platform, View } from './types';
+import type { DocumentDeck, OfficeHost, Platform, View } from './types';
 
 const TAG_KEY = 'PULSE_DECK';
 
@@ -106,16 +106,17 @@ export function createOfficeHost(info: { platform: Office.PlatformType | null })
     },
 
     readDocumentDeck: async () => {
-      if (!powerPointAvailable()) return null;
-      const run = PowerPoint.run(async (ctx) => {
+      const unsupported: DocumentDeck = { supported: false, link: null };
+      if (!powerPointAvailable()) return unsupported;
+      const run = PowerPoint.run(async (ctx): Promise<DocumentDeck> => {
         const tag = ctx.presentation.tags.getItemOrNullObject(TAG_KEY);
         tag.load('value');
         await ctx.sync();
-        if (tag.isNullObject) return null;
+        if (tag.isNullObject) return { supported: true, link: null };
         const parsed = deckLinkSchema.safeParse(JSON.parse(tag.value));
-        return parsed.success ? parsed.data : null;
+        return { supported: true, link: parsed.success ? parsed.data : null };
       });
-      return withTimeout<DeckLink | null>(run, 4000, null);
+      return withTimeout(run, 4000, unsupported);
     },
 
     writeDocumentDeck: async (link) => {

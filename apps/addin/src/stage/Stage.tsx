@@ -51,6 +51,13 @@ export interface StageActions {
   reveal?: () => void;
 }
 
+interface Join {
+  host: string;
+  code: string;
+  url: string;
+  showQr: boolean;
+}
+
 function useNow(active: boolean, offset: number): number {
   const [now, setNow] = useState(() => Date.now() + offset);
   useEffect(() => {
@@ -66,54 +73,75 @@ function useNow(active: boolean, offset: number): number {
 }
 
 function promptSize(text: string): string {
-  if (text.length <= 60) return 'size-l';
-  if (text.length <= 120) return 'size-m';
+  if (text.length <= 50) return 'size-l';
+  if (text.length <= 110) return 'size-m';
   return 'size-s';
 }
 
 /**
- * Slideshow view of one slide item (§6.7): join strip, prompt, visualisation, footer.
+ * Slideshow view of one slide item (§6.7): slim join strip, prompt, visualisation, small footer.
  * Never blank: without server data it still shows join URL, code and QR from the file (principle 4).
+ * `joinOverlay` (slideshow only): clicking the join strip shows the QR code and code full size.
  */
-export function Stage({ data, actions = {} }: { data: StageData; actions?: StageActions }) {
+export function Stage({
+  data,
+  actions = {},
+  joinOverlay = false,
+}: {
+  data: StageData;
+  actions?: StageActions;
+  joinOverlay?: boolean;
+}) {
   const t = useMemo(() => createTranslator(data.language), [data.language]);
+  const [overlay, setOverlay] = useState(false);
   const { config } = data;
-  const host = displayHost(data.baseUrl);
-  const code = formatJoinCode(data.joinCode);
-  const joinUrl = `${data.baseUrl.replace(/\/+$/, '')}/${data.joinCode}`;
+  const join: Join = {
+    host: displayHost(data.baseUrl),
+    code: formatJoinCode(data.joinCode),
+    url: `${data.baseUrl.replace(/\/+$/, '')}/${data.joinCode}`,
+    showQr: data.showQr && data.joinCode !== '' && data.baseUrl !== '',
+  };
   const prompt = config?.kind === 'question' ? config.prompt : data.draft?.kind === 'question' ? data.draft.prompt : '';
   const title =
     config?.kind === 'leaderboard' ? t('stage.leaderboard') : config?.kind === 'qa_wall' ? t('stage.qaTitle') : prompt;
 
+  const strip = data.joinCode ? (
+    <>
+      <span className="stage-join">
+        {join.host ? <span className="stage-join-host">{join.host}</span> : null}
+        <span className="stage-join-label">{t('stage.code')}</span>
+        <span className="stage-join-code tabular">{join.code}</span>
+      </span>
+      {join.showQr ? (
+        <span className="stage-qr">
+          <QrCode text={join.url} label={`${join.host} ${join.code}`} />
+        </span>
+      ) : null}
+    </>
+  ) : (
+    <span className="stage-join-label">{t('stage.noSession')}</span>
+  );
+
   return (
     <div className={`stage theme-${data.theme}`} lang={data.language}>
-      <header className="stage-strip">
-        {data.joinCode ? (
-          <div className="stage-join">
-            {host ? (
-              <>
-                <span className="stage-join-host">{host}</span>
-                <span className="stage-join-sep" aria-hidden="true">
-                  ·
-                </span>
-              </>
-            ) : null}
-            <span className="stage-join-label">{t('stage.code')}</span>
-            <span className="stage-join-code tabular">{code}</span>
-          </div>
-        ) : (
-          <span className="stage-join-label">{t('stage.noSession')}</span>
-        )}
-        {data.showQr && data.joinCode && data.baseUrl ? (
-          <div className="stage-qr">
-            <QrCode text={joinUrl} label={`${host} ${code}`} />
-          </div>
-        ) : null}
-      </header>
+      {joinOverlay && data.joinCode ? (
+        <button
+          type="button"
+          className="stage-strip interactive"
+          aria-label={t('stage.showJoin')}
+          onClick={() => {
+            setOverlay(true);
+          }}
+        >
+          {strip}
+        </button>
+      ) : (
+        <header className="stage-strip">{strip}</header>
+      )}
       <div className="stage-body">
         {title ? <h1 className={`stage-prompt ${promptSize(title)}`}>{title}</h1> : null}
         <div className={`stage-viz ${data.connected ? '' : 'stale'}`}>
-          <Visualisation data={data} actions={actions} t={t} />
+          <Visualisation data={data} actions={actions} t={t} join={join} />
         </div>
       </div>
       <footer className="stage-footer">
@@ -123,6 +151,27 @@ export function Stage({ data, actions = {} }: { data: StageData; actions?: Stage
         </span>
         {!data.connected ? <span className="stage-conn">{t('stage.reconnecting')}</span> : null}
       </footer>
+      {overlay ? (
+        <button
+          type="button"
+          className="stage-overlay"
+          aria-label={t('common.close')}
+          onClick={() => {
+            setOverlay(false);
+          }}
+        >
+          {join.showQr ? (
+            <span className="stage-overlay-qr">
+              <QrCode text={join.url} label={`${join.host} ${join.code}`} />
+            </span>
+          ) : null}
+          <span className="stage-overlay-text">
+            {join.host ? <span className="stage-overlay-host">{join.host}</span> : null}
+            <span className="stage-join-label">{t('stage.code')}</span>
+            <span className="stage-overlay-code tabular">{join.code}</span>
+          </span>
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -134,50 +183,71 @@ function footerCount(data: StageData, t: Translate): string {
   return plural(t, 'stage.responses', n, formatNumber(n, data.language));
 }
 
-function Empty({ children }: { children: ReactNode }) {
-  return <p className="stage-empty">{children}</p>;
+/** Calm placeholder; while nobody has answered, the QR code is shown large (people are joining now). */
+function Waiting({ join, children }: { join?: Join; children: ReactNode }) {
+  return (
+    <div className="stage-waiting">
+      {join?.showQr ? (
+        <span className="stage-waiting-qr">
+          <QrCode text={join.url} label={`${join.host} ${join.code}`} />
+        </span>
+      ) : null}
+      <p className="stage-empty">{children}</p>
+    </div>
+  );
 }
 
-function Visualisation({ data, actions, t }: { data: StageData; actions: StageActions; t: Translate }) {
+function Visualisation({
+  data,
+  actions,
+  t,
+  join,
+}: {
+  data: StageData;
+  actions: StageActions;
+  t: Translate;
+  join: Join;
+}) {
   const { config, results } = data;
-  const code = formatJoinCode(data.joinCode);
-  if (!config) return <Empty>{t('stage.incomplete')}</Empty>;
+  if (!config) return <Waiting>{t('stage.incomplete')}</Waiting>;
   if (config.kind === 'leaderboard') return <Leaderboard view={data.leaderboard} t={t} language={data.language} />;
   if (config.kind === 'qa_wall') {
-    if (!data.qaEnabled) return <Empty>{t('stage.qaDisabled')}</Empty>;
-    return <QaWall items={data.qa} t={t} code={code} actions={actions} />;
+    if (!data.qaEnabled) return <Waiting>{t('stage.qaDisabled')}</Waiting>;
+    if (data.qa.length === 0) return <Waiting join={join}>{t('stage.qaEmpty')}</Waiting>;
+    return <QaWall items={data.qa} t={t} actions={actions} />;
   }
   switch (config.type) {
     case 'multiple_choice': {
       const hidden = config.resultsVisibility === 'on_reveal' && !(data.item?.revealed ?? false);
-      if (hidden) {
-        return (
-          <div>
-            <Empty>{t('stage.hiddenUntilReveal')}</Empty>
-            {actions.reveal ? (
-              <button type="button" className="stage-reveal-btn" onClick={actions.reveal}>
-                {t('stage.reveal')}
-              </button>
-            ) : null}
-          </div>
-        );
-      }
       const counts = results?.type === 'multiple_choice' ? results.counts : {};
       const correct = data.item?.revealed && config.correctOptionIds?.length ? new Set(config.correctOptionIds) : null;
       return (
-        <Bars
-          options={config.options}
-          counts={counts}
-          total={results?.respondents ?? 0}
-          correct={correct}
-          language={data.language}
-          t={t}
-        />
+        <div className="stage-fill">
+          <Bars
+            options={config.options}
+            counts={counts}
+            total={results?.respondents ?? 0}
+            correct={correct}
+            hidden={hidden}
+            language={data.language}
+            t={t}
+          />
+          {hidden ? (
+            <div className="stage-hint">
+              <span>{t('stage.hiddenUntilReveal')}</span>
+              {actions.reveal ? (
+                <button type="button" className="stage-btn" onClick={actions.reveal}>
+                  {t('stage.reveal')}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       );
     }
     case 'word_cloud': {
       const words = results?.type === 'word_cloud' ? results.words : [];
-      if (words.length === 0) return <Empty>{t('stage.empty', { code })}</Empty>;
+      if (words.length === 0) return <Waiting join={join}>{t('stage.empty')}</Waiting>;
       return (
         <WordCloud
           words={words.slice(0, DISPLAY.wordCloudMaxWords)}
@@ -188,7 +258,7 @@ function Visualisation({ data, actions, t }: { data: StageData; actions: StageAc
     }
     case 'open_text': {
       const entries = results?.type === 'open_text' ? results.entries : [];
-      if (entries.length === 0) return <Empty>{t('stage.empty', { code })}</Empty>;
+      if (entries.length === 0) return <Waiting join={join}>{t('stage.empty')}</Waiting>;
       return (
         <Wall
           entries={entries}
@@ -208,6 +278,7 @@ function Visualisation({ data, actions, t }: { data: StageData; actions: StageAc
 
 // ---------------------------------------------------------------------------------------------
 
+/** Horizontal bars in option order (§6.7): label, bar, percentage. The absolute total is in the footer. */
 function Bars({
   options,
   counts,
@@ -215,6 +286,7 @@ function Bars({
   correct,
   language,
   t,
+  hidden = false,
   shapes = false,
 }: {
   options: { id: string; label: string }[];
@@ -223,27 +295,27 @@ function Bars({
   correct: Set<string> | null;
   language: Language;
   t: Translate;
+  hidden?: boolean;
   shapes?: boolean;
 }) {
   return (
-    <div className="bars">
+    <div className={`bars ${options.length > 5 ? 'dense' : ''}`}>
       {options.map((o, index) => {
-        const n = counts[o.id] ?? 0;
+        const n = hidden ? 0 : (counts[o.id] ?? 0);
         const pct = total > 0 ? (n / total) * 100 : 0;
         const isCorrect = correct?.has(o.id) ?? false;
         return (
           <div key={o.id} className={`bar-row ${correct && !isCorrect ? 'dim' : ''}`}>
             <span className="bar-label">
               {shapes ? <QuizShape index={index} /> : null}
+              <span className="bar-text">{o.label}</span>
               {isCorrect ? <CheckIcon aria-label={t('stage.correct')} strokeWidth={3} /> : null}
-              <span>{o.label}</span>
             </span>
             <div className="bar-track">
               <div className="bar-fill" style={{ width: `${pct}%` }} />
             </div>
-            <span className="bar-value tabular">
-              {formatNumber(n, language)}
-              <span className="pct">{formatPercent(n, total, language)}</span>
+            <span className="bar-value tabular" title={hidden ? undefined : formatNumber(n, language)}>
+              {hidden || total === 0 ? '' : formatPercent(n, total, language)}
             </span>
           </div>
         );
@@ -252,10 +324,11 @@ function Bars({
   );
 }
 
-function textSize(text: string): string {
-  if (text.length < 40) return '3.6cqh';
-  if (text.length < 120) return '3cqh';
-  return '2.6cqh';
+/** One text size for the whole wall, chosen by how many cards there are (calmer than per-card sizes). */
+function wallSize(count: number): string {
+  if (count <= 6) return 'size-l';
+  if (count <= 12) return 'size-m';
+  return 'size-s';
 }
 
 /** Masonry wall, newest top-left, max 24 visible, gentle scroll of the overflow every 6 s (§6.7). */
@@ -291,14 +364,11 @@ function Wall({
   const cols: (typeof visible)[] = Array.from({ length: columns }, () => []);
   visible.forEach((entry, i) => cols[i % columns]?.push(entry));
   return (
-    <div
-      ref={ref}
-      style={{ height: '100%', overflow: 'hidden', display: 'flex', gap: '1.6cqw', alignItems: 'flex-start' }}
-    >
+    <div ref={ref} className={`wall ${wallSize(visible.length)}`}>
       {cols.map((col, ci) => (
-        <div key={ci} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.6cqw' }}>
+        <div key={ci} className="wall-col">
           {col.map((entry) => (
-            <div key={entry.id} className="wall-card hideable" style={{ fontSize: textSize(entry.text) }}>
+            <div key={entry.id} className="wall-card hideable">
               {entry.text}
               {onHide ? (
                 <button
@@ -320,6 +390,10 @@ function Wall({
   );
 }
 
+/**
+ * Scale (§6.7): one row per statement with its distribution and average marker. The axis numbers, the end
+ * labels and the "average" heading appear once for all rows instead of on every row.
+ */
 function Scale({
   config,
   results,
@@ -332,8 +406,16 @@ function Scale({
   t: Translate;
 }) {
   const values = Array.from({ length: config.range }, (_, i) => i + 1);
+  const hasEnds = config.minLabel !== '' || config.maxLabel !== '';
   return (
     <div className="scale">
+      <span />
+      <div className="scale-axis tabular" aria-hidden="true">
+        {values.map((v) => (
+          <span key={v}>{v}</span>
+        ))}
+      </div>
+      <span className="scale-head">{t('stage.averageLabel')}</span>
       {config.statements.map((statement) => {
         const row = results?.statements.find((s) => s.id === statement.id);
         const histogram = row?.histogram ?? values.map(() => 0);
@@ -345,20 +427,11 @@ function Scale({
             <div className="scale-plot">
               <div className="scale-hist" aria-hidden="true">
                 {histogram.map((n, i) => (
-                  <div key={i} style={{ height: `${(n / peak) * 100}%` }} />
+                  <div key={i}>
+                    <div style={{ height: `${(n / peak) * 100}%` }} />
+                  </div>
                 ))}
               </div>
-              <div className="scale-track tabular">
-                {values.map((v) => (
-                  <span key={v}>{v}</span>
-                ))}
-              </div>
-              {config.minLabel || config.maxLabel ? (
-                <div className="scale-ends">
-                  <span>{config.minLabel}</span>
-                  <span>{config.maxLabel}</span>
-                </div>
-              ) : null}
               {average !== null ? (
                 <div
                   className="scale-avg-marker"
@@ -367,13 +440,20 @@ function Scale({
                 />
               ) : null}
             </div>
-            <span className="scale-avg tabular">
-              <small>{t('stage.averageLabel')}</small>
-              {average === null ? '–' : formatNumber(average, language, 1)}
-            </span>
+            <span className="scale-avg tabular">{average === null ? '–' : formatNumber(average, language, 1)}</span>
           </div>
         );
       })}
+      {hasEnds ? (
+        <>
+          <span />
+          <div className="scale-ends">
+            <span>{config.minLabel}</span>
+            <span>{config.maxLabel}</span>
+          </div>
+          <span />
+        </>
+      ) : null}
     </div>
   );
 }
@@ -395,19 +475,6 @@ function Quiz({
   const remaining = data.item?.phaseEndsAt ? Math.max(0, data.item.phaseEndsAt - now) : 0;
   const results = data.results?.type === 'quiz' ? data.results : null;
 
-  if (state === 'idle') {
-    return (
-      <div className="quiz-center">
-        {config.startMode === 'click' && actions.startQuiz ? (
-          <button type="button" className="quiz-start" onClick={actions.startQuiz}>
-            {t('stage.quizStart')}
-          </button>
-        ) : (
-          <QuizOptions config={config} />
-        )}
-      </div>
-    );
-  }
   if (state === 'countdown') {
     const n = Math.max(1, Math.ceil(remaining / 1000));
     return (
@@ -419,106 +486,102 @@ function Quiz({
       </div>
     );
   }
-  if (state === 'answering') {
+  if (state === 'idle' || state === 'answering') {
     const total = config.timeLimitSec * 1000;
-    const fraction = total > 0 ? remaining / total : 0;
-    const r = 45;
+    const fraction = state === 'answering' && total > 0 ? remaining / total : 1;
+    const r = 44;
     const circumference = 2 * Math.PI * r;
     return (
       <div className="quiz-grid">
-        <QuizOptions config={config} />
-        <div className="quiz-timer" role="timer">
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track)" strokeWidth="8" />
-            <circle
-              cx="50"
-              cy="50"
-              r={r}
-              fill="none"
-              stroke="var(--heading)"
-              strokeWidth="8"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - fraction)}
-            />
-          </svg>
-          <span className="quiz-timer-value tabular">{Math.ceil(remaining / 1000)}</span>
+        <div className={`quiz-options ${config.options.length > 4 ? 'six' : ''}`}>
+          {config.options.map((o, index) => (
+            <div key={o.id} className="quiz-option">
+              <QuizShape index={index} />
+              <span>{o.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="quiz-side">
+          {state === 'idle' && config.startMode === 'click' && actions.startQuiz ? (
+            <button type="button" className="stage-btn primary" onClick={actions.startQuiz}>
+              {t('stage.quizStart')}
+            </button>
+          ) : (
+            <div className="quiz-timer" role="timer">
+              <svg viewBox="0 0 100 100" aria-hidden="true">
+                <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track)" strokeWidth="7" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={r}
+                  fill="none"
+                  stroke="var(--heading)"
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference * (1 - fraction)}
+                />
+              </svg>
+              <span className="quiz-timer-value tabular">
+                {state === 'answering' ? Math.ceil(remaining / 1000) : config.timeLimitSec}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     );
   }
   // reveal (and closed)
   return (
-    <Bars
-      options={config.options}
-      counts={results?.counts ?? {}}
-      total={results?.respondents ?? 0}
-      correct={new Set([config.correctOptionId])}
-      language={data.language}
-      t={t}
-      shapes
-    />
-  );
-}
-
-function QuizOptions({ config }: { config: Extract<SlideItemConfig, { type: 'quiz' }> }) {
-  return (
-    <>
-      {config.options.map((o, index) => (
-        <div key={o.id} className="quiz-option" style={{ gridColumn: (index % 2) + 1 }}>
-          <QuizShape index={index} />
-          <span>{o.label}</span>
-        </div>
-      ))}
-    </>
-  );
-}
-
-function Leaderboard({ view, t, language }: { view: LeaderboardView | null; t: Translate; language: Language }) {
-  if (!view || view.entries.length === 0) return <Empty>{t('stage.leaderboardEmpty')}</Empty>;
-  return (
-    <div className="board">
-      {view.entries.map((e) => (
-        <div key={`${e.rank}-${e.nickname}`} className={`board-row ${e.rank <= 3 ? `top-${e.rank}` : 'rest'}`}>
-          <span className="board-rank tabular">{e.rank}</span>
-          <span className="board-name">{e.nickname}</span>
-          <span className="board-points tabular">{formatNumber(e.points, language)}</span>
-        </div>
-      ))}
+    <div className="stage-fill">
+      <Bars
+        options={config.options}
+        counts={results?.counts ?? {}}
+        total={results?.respondents ?? 0}
+        correct={new Set([config.correctOptionId])}
+        language={data.language}
+        t={t}
+        shapes
+      />
     </div>
   );
 }
 
-function QaWall({
-  items,
-  t,
-  code,
-  actions,
-}: {
-  items: QaItemView[];
-  t: Translate;
-  code: string;
-  actions: StageActions;
-}) {
-  if (items.length === 0) return <Empty>{t('stage.qaEmpty', { code })}</Empty>;
+/** Top 10 in one column; ranks 1–3 emphasised by size (§6.7), no medals. */
+function Leaderboard({ view, t, language }: { view: LeaderboardView | null; t: Translate; language: Language }) {
+  if (!view || view.entries.length === 0) return <Waiting>{t('stage.leaderboardEmpty')}</Waiting>;
+  return (
+    <ol className="board">
+      {view.entries.map((e) => (
+        <li key={`${e.rank}-${e.nickname}`} className={`board-row ${e.rank <= 3 ? `top-${e.rank}` : 'rest'}`}>
+          <span className="board-rank tabular">{e.rank}</span>
+          <span className="board-name">{e.nickname}</span>
+          <span className="board-points tabular">{formatNumber(e.points, language)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function QaWall({ items, t, actions }: { items: QaItemView[]; t: Translate; actions: StageActions }) {
   const open = items.filter((q) => !q.answered).sort((a, b) => b.upvotes - a.upvotes || a.createdAt - b.createdAt);
   const answered = items.filter((q) => q.answered);
   const shown = [...open, ...answered].slice(0, DISPLAY.qaWallTop);
   return (
-    <div className="qa-list">
+    <ol className="qa-list">
       {shown.map((q) => (
-        <div key={q.id} className={`qa-item hideable ${q.answered ? 'answered' : ''}`}>
+        <li key={q.id} className={`qa-item hideable ${q.answered ? 'answered' : ''}`}>
           <span className="qa-votes tabular">
             <ArrowUpIcon />
             {q.upvotes}
           </span>
           <span className="qa-text">{q.text}</span>
           {actions.hideQa || actions.markAnswered ? (
-            <span style={{ position: 'absolute', top: '0.6cqh', right: '0.6cqw', display: 'flex', gap: '0.6cqw' }}>
+            <span className="qa-actions">
               {actions.markAnswered ? (
                 <button
                   type="button"
-                  className="hide-btn"
-                  style={{ position: 'static' }}
+                  className="hide-btn static"
                   aria-label={t('qa.answered')}
                   title={t('qa.answered')}
                   onClick={() => actions.markAnswered?.(q.id, !q.answered)}
@@ -527,20 +590,15 @@ function QaWall({
                 </button>
               ) : null}
               {actions.hideQa ? (
-                <button
-                  type="button"
-                  className="hide-btn"
-                  style={{ position: 'static' }}
-                  onClick={() => actions.hideQa?.(q.id)}
-                >
+                <button type="button" className="hide-btn static" onClick={() => actions.hideQa?.(q.id)}>
                   <EyeOffIcon />
                   {t('stage.hide')}
                 </button>
               ) : null}
             </span>
           ) : null}
-        </div>
+        </li>
       ))}
-    </div>
+    </ol>
   );
 }

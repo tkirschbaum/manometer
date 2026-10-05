@@ -106,7 +106,8 @@ export function Gallery({ params }: { params: URLSearchParams }) {
         connected: !params.get('offline'),
         clockOffset: 0,
       }}
-      actions={params.get('quizStart') ? { startQuiz: () => undefined } : {}}
+      actions={params.get('quizStart') ? { startQuiz: () => undefined, reveal: () => undefined } : {}}
+      joinOverlay
     />
   );
 }

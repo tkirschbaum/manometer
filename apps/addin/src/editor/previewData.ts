@@ -8,7 +8,11 @@ export function previewResults(config: SlideItemConfig | null): {
   leaderboard: LeaderboardView;
   qa: QaItemView[];
 } {
-  const item: ItemLiveState = { state: 'open', revealed: true, phaseEndsAt: null };
+  // A quiz is previewed in its question phase (options + timer); everything else with results.
+  const item: ItemLiveState =
+    config?.kind === 'question' && config.type === 'quiz'
+      ? { state: 'idle', revealed: false, phaseEndsAt: null }
+      : { state: 'open', revealed: true, phaseEndsAt: null };
   const leaderboard: LeaderboardView = {
     entries: [
       { rank: 1, nickname: 'Lena', points: 2840 },

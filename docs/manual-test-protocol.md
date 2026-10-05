@@ -20,14 +20,15 @@ with phones the address on the slide must be reachable (tunnel or server). Note 
 
 | # | Step | Expected | Result |
 |---|---|---|---|
-| A1 | New presentation, blank slide → insert Pulse | Frame with "Live voting on this slide" and the button *New live session …* | W: · M: |
+| A1 | New presentation, blank slide → insert Pulse | Frame asks "What would you like to ask?" with seven type cards | W: · M: |
 | A2 | Drag the frame to fill the slide | Frame resizes; content stays readable | W: · M: |
-| A3 | *New live session* → *Multiple choice* → question "Wie geht's?", options "Gut", "Müde", "Hungrig" (umlauts!) | Header shows code `123 456`-style with a red dot; footer "Saved in file · Synced with server" | W: · M: |
-| A4 | Click *Preview* | Slide preview with sample bars, code and QR | W: · M: |
-| A5 | Slide 2: insert Pulse → *Connect to live session …* → *Word cloud* | Same code as slide 1 | W: · M: |
-| A6 | Slide 3: *Quiz*, 2 options, mark the correct one, 20 s, start *by click* | Footer reports nothing missing | W: · M: |
+| A3 | *Multiple choice* → question "Wie geht's?", answers "Gut", "Müde", "Hungrig" (umlauts!) | Header shows code `123 456`-style with a red dot; preview next to the form (large frame); footer "Ready to present" | W: · M: |
+| A4 | Click *Done*; then click the slide | *Done* shows the slide as in the slideshow (empty bars, no sample data); clicking it reopens the form | W: · M: |
+| A5 | Slide 2: insert Pulse → *Word cloud* | No extra step; same code as slide 1 | W: · M: |
+| A6 | Slide 3: *Quiz*, 2 answers, click the correct one, 20 s, *More options* → start *by click* | Footer reports nothing missing | W: · M: |
 | A7 | Slide 4: *Leaderboard*; slide 5: *Audience Q&A* → *Switch on audience questions* | Both show their info text, no error | W: · M: |
 | A8 | Change slide 1 type via the type menu → confirm | Dialog warns; new type appears | W: · M: |
+| A9 | Click outside the frame (on the PowerPoint slide) while editing a complete question | Frame switches back to the slide view | W: · M: |
 
 ## B. Duplicate, save, reopen
 
@@ -35,15 +36,17 @@ with phones the address on the slide must be reachable (tunnel or server). Note 
 |---|---|---|---|
 | B1 | Duplicate slide 1 (right-click → *Duplicate slide*), click into the copy's frame | Toast "Copy detected – created as a new question" (or banner "This question exists twice" → *Use as a separate question*) | W: · M: |
 | B2 | Save (Ctrl+S / Cmd+S), close PowerPoint completely, reopen the file | All frames show their questions; same code | W: · M: |
-| B3 | Copy the .pptx to a **second computer** with Pulse added, open it | Questions visible; frames connect to the same session | W: · M: |
+| B3 | Copy the .pptx to a **second computer** with Pulse added, open it | Questions visible; same code | W: · M: |
 | B4 | Copy slide 3 into a **different** presentation | Copy becomes a new question there | W: · M: |
 
 ## C. Slideshow
 
 | # | Step | Expected | Result |
 |---|---|---|---|
-| C1 | Start the slideshow from slide 1 (one monitor) | Question, code, QR and address visible; layout fills the slide | W: · M: |
-| C2 | Three phones (iPhone + Android if possible) scan the QR code | Phones show the question; slide shows "3 people"/responses as they answer | W: · M: |
+| C1 | Start the slideshow from slide 1 (one monitor) | Question, address and code in a slim bar, small QR code; layout fills the slide | W: · M: |
+| C1b | Click the address bar on the slide; click again | QR code and code full screen; second click closes it | W: · M: |
+| C2 | Three phones (iPhone + Android if possible) scan the QR code | Phones show the question; slide shows the responses as they answer | W: · M: |
+| C2b | Slide 2 (word cloud) before anyone answers | Large QR code in the middle with "No responses yet"; disappears with the first word | W: · M: |
 | C3 | Next slide (word cloud) | Phones switch to the word cloud within ~1 s; slide 1 is no longer active on the phones | W: · M: |
 | C4 | Each phone sends 3 words incl. "Herz", "herz", "Größe" | Words merge case-insensitively; umlauts correct | W: · M: |
 | C5 | Quiz slide: click *Start quiz* on the slide | Countdown, then timer; phones answer; correct answer + points shown at the end | W: · M: |

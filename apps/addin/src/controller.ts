@@ -17,6 +17,21 @@ import type { DeckLink, OfficeHost, View } from './office/types';
 
 export type Notice = 'copyDetected' | 'linkCopied' | null;
 
+/**
+ * Which deck a fresh frame will use when the first slide type is picked (§6.4), without asking up front:
+ * the presentation's own deck if the document store has one (linked immediately), otherwise a new deck. Only
+ * when the document store is unavailable, the most recently used deck on this computer is suggested.
+ */
+export interface DeckChoice {
+  /** Deck used on the first pick; null = a new deck (new join code). */
+  suggested: RegistryEntry | null;
+  /** Decks used recently on this computer, offered under "change". */
+  options: RegistryEntry[];
+}
+
+/** A registry deck counts as "the presentation being built" for this long (fallback without document store). */
+const RECENT_DECK_MS = 12 * 60 * 60 * 1000;
+
 export interface ControllerState {
   settings: AddinSettings;
   view: View;
@@ -25,12 +40,15 @@ export interface ControllerState {
   onScreen: boolean;
   saving: boolean;
   toast: Notice;
+  /** Join link shown in the "link copied" toast when the clipboard is blocked in the webview. */
+  copyFallback: string | null;
   /** Deck was deleted by retention and silently recreated (§5.8). */
   retentionNotice: boolean;
   /** Heartbeat fallback found an older live instance with the same item id (§6.5). */
   duplicate: boolean;
-  /** Registry entries offered to a fresh instance (§6.4); null while the document store is checked. */
-  candidates: RegistryEntry[] | null;
+  /** Deck a fresh instance will use (§6.4); null while the document store is checked. */
+  deckChoice: DeckChoice | null;
+  /** Show the "save the presentation" hint (once per session, after the first change). */
   showSaveReminder: boolean;
 }
 
@@ -70,6 +88,7 @@ export class AddinController {
   private activeItemId: string | null = null;
   private readonly heartbeat = new Heartbeat();
   private started = false;
+  private deckCheck: Promise<void> | null = null;
 
   constructor(readonly host: OfficeHost) {
     this.state = {
@@ -79,9 +98,10 @@ export class AddinController {
       onScreen: false,
       saving: false,
       toast: null,
+      copyFallback: null,
       retentionNotice: false,
       duplicate: false,
-      candidates: null,
+      deckChoice: null,
       showSaveReminder: false,
     };
   }
@@ -186,11 +206,12 @@ export class AddinController {
         title: deck.settings.title,
       };
       deckRegistry.remember(link);
-      void this.host.readDocumentDeck().then((existing) => {
-        if (existing?.deckId !== deck.id) void this.host.writeDocumentDeck(link);
+      void this.host.readDocumentDeck().then((doc) => {
+        // Only fill an empty store: a slide pasted from another presentation must not take over this one's deck.
+        if (doc.supported && !doc.link) void this.host.writeDocumentDeck(link);
       });
-    } else if (this.state.candidates === null) {
-      void this.offerDecks();
+    } else {
+      this.deckCheck ??= this.checkDocumentDeck();
     }
     this.heartbeat.start(
       () => (this.state.view === 'edit' ? (this.state.settings.item?.id ?? null) : null),
@@ -226,19 +247,38 @@ export class AddinController {
     this.scheduleItemSync();
   }
 
-  dismissSaveReminder(): void {
-    this.set({ showSaveReminder: false });
-  }
-
   // -- deck linking (§6.4) ----------------------------------------------------------------------
 
-  private async offerDecks(): Promise<void> {
-    const fromDocument = await this.host.readDocumentDeck();
-    if (fromDocument && !this.state.settings.deck) {
-      this.linkDeck(fromDocument);
+  private async checkDocumentDeck(): Promise<void> {
+    const doc = await this.host.readDocumentDeck();
+    if (this.state.settings.deck) return;
+    if (doc.link) {
+      this.linkDeck(doc.link);
       return;
     }
-    this.set({ candidates: deckRegistry.list() });
+    const options = deckRegistry.list();
+    const recent = options[0] && Date.now() - options[0].lastUsedAt < RECENT_DECK_MS ? options[0] : null;
+    this.set({ deckChoice: { suggested: doc.supported ? null : recent, options } });
+  }
+
+  /** "Change" in the type picker: use another recent deck, or null for a new one. */
+  chooseDeck(entry: RegistryEntry | null): void {
+    const options = this.state.deckChoice?.options ?? deckRegistry.list();
+    this.set({ deckChoice: { suggested: entry, options } });
+  }
+
+  /** First pick in a fresh frame: link or create the deck (no separate step), then set the slide type. */
+  async pickKind(kind: SlideKind): Promise<void> {
+    if (!this.state.settings.deck) {
+      this.deckCheck ??= this.checkDocumentDeck();
+      await this.deckCheck;
+    }
+    if (!this.state.settings.deck) {
+      const suggested = this.state.deckChoice?.suggested ?? null;
+      if (suggested) this.linkDeck(suggested);
+      else this.createDeck();
+    }
+    this.setKind(kind);
   }
 
   createDeck(): void {
@@ -316,6 +356,12 @@ export class AddinController {
       }));
       this.showToast('copyDetected');
     }
+  }
+
+  /** After copying the join link; `fallbackUrl` is shown when the clipboard was not available. */
+  notifyLinkCopied(fallbackUrl: string | null): void {
+    this.set({ copyFallback: fallbackUrl });
+    this.showToast('linkCopied');
   }
 
   showToast(toast: Notice): void {

@@ -80,6 +80,11 @@ export const EyeIcon = (p: IconProps) => (
     <circle cx="12" cy="12" r="3" />
   </Svg>
 );
+export const PencilIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4zM13.5 6.5l4 4" />
+  </Svg>
+);
 
 /** Slide kind icons (simple line drawings, no clip-art, §11.6). */
 export function KindIcon({ kind, size = 18 }: { kind: string; size?: number }) {

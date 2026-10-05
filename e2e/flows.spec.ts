@@ -1,6 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { dictionaries } from '../packages/shared/src/index';
 import { join, openPresenter, translator } from './helpers';
+
+type OpenFrame = () => Promise<Page>;
 
 test.describe('participant flows with the add-in harness as presenter', () => {
   test('multiple choice: join by code entry, vote, presenter sees the result, duplicate prevented', async ({
@@ -176,5 +180,71 @@ test.describe('accessibility (axe)', () => {
     await page.goto('/datenschutz');
     await check();
     await quiz.page.context().close();
+  });
+});
+
+test.describe('editor in the add-in harness (PowerPoint edit view)', () => {
+  // The editor is desktop UI; one device project is enough.
+  test.beforeEach(({ browserName }, info) => {
+    test.skip(info.project.name !== 'pixel5-de' || browserName !== 'chromium', 'desktop editor: one project is enough');
+  });
+
+  const de = dictionaries.de;
+  const openFrame = async (browser: Browser, extra = ''): Promise<{ context: BrowserContext; open: OpenFrame }> => {
+    const context = await browser.newContext({ viewport: { width: 900, height: 506 }, locale: 'de-AT' });
+    await context.route('https://appsforoffice.microsoft.com/**', (route) => route.abort());
+    let slide = 256;
+    const open: OpenFrame = async () => {
+      const frame = await context.newPage();
+      slide += 1;
+      await frame.goto(
+        `/addin/?harness=1&instance=ed-${randomUUID().slice(0, 6)}&slide=${slide}&view=edit&lang=de${extra}`,
+      );
+      await frame.addStyleTag({ content: '[data-testid=harness]{display:none !important}' });
+      return frame;
+    };
+    return { context, open };
+  };
+
+  test('pick a type, write the question, done shows the slide; the next frame reuses the code', async ({ browser }) => {
+    const { context, open } = await openFrame(browser);
+    const first = await open();
+    await expect(first.getByRole('heading', { name: de['editor.welcome'] })).toBeVisible();
+    await first.getByRole('button', { name: new RegExp(de['type.multiple_choice']) }).click();
+    await first.locator('#prompt').fill('Welches Organ produziert Insulin?');
+    const options = first.locator('input[id^=opt-]');
+    await options.nth(0).fill('Leber');
+    await options.nth(1).fill('Bauchspeicheldrüse');
+    await expect(first.getByRole('status').filter({ hasText: de['editor.status.ready'] })).toBeVisible({
+      timeout: 10_000,
+    });
+    await first.getByRole('button', { name: de['editor.done'] }).click();
+    await expect(first.locator('.stage-prompt')).toHaveText('Welches Organ produziert Insulin?');
+    const code = (await first.locator('.stage-join-code').innerText()).replace(/\s/g, '');
+    expect(code).toMatch(/^\d{6}$/);
+    // Click on the slide to edit again.
+    await first.getByRole('button', { name: de['editor.edit'] }).click();
+    await expect(first.locator('#prompt')).toHaveValue('Welches Organ produziert Insulin?');
+
+    // A second Pulse frame in the same presentation: no session step, same code after picking a type.
+    const second = await open();
+    await second.getByRole('button', { name: new RegExp(de['type.word_cloud']) }).click();
+    await expect(second.getByRole('button', { name: new RegExp(de['editor.copyLink']) })).toContainText(
+      `${code.slice(0, 3)} ${code.slice(3)}`,
+      { timeout: 10_000 },
+    );
+    await context.close();
+  });
+
+  test('without a document store, a new frame suggests the recently used code', async ({ browser }) => {
+    const { context, open } = await openFrame(browser, '&docStore=0');
+    const first = await open();
+    await first.getByRole('button', { name: new RegExp(`^${de['type.quiz']} `) }).click();
+    const chip = first.getByRole('button', { name: new RegExp(de['editor.copyLink']) });
+    await expect(chip).toContainText(/\d{3} \d{3}/, { timeout: 10_000 });
+    const shown = /\d{3} \d{3}/.exec(await chip.innerText())?.[0] ?? '';
+    const second = await open();
+    await expect(second.getByText(de['editor.deck.recent'].replace('{code}', shown))).toBeVisible();
+    await context.close();
   });
 });

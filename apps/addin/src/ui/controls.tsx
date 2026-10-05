@@ -116,11 +116,14 @@ export function Menu({
   onClose,
   children,
   align = 'right',
+  above = false,
 }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   align?: 'left' | 'right';
+  /** Open upwards (menus near the bottom edge of the frame). */
+  above?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -143,7 +146,7 @@ export function Menu({
     <div
       ref={ref}
       role="menu"
-      className={`absolute top-full z-30 mt-1 min-w-56 rounded-brand border border-line bg-paper py-1 ${align === 'right' ? 'right-0' : 'left-0'}`}
+      className={`absolute z-30 max-h-[70vh] min-w-56 overflow-auto rounded-brand border border-line bg-paper py-1 ${above ? 'bottom-full mb-1' : 'top-full mt-1'} ${align === 'right' ? 'right-0' : 'left-0'}`}
     >
       {children}
     </div>

@@ -136,6 +136,39 @@ export function toConfig(draft: ItemDraft, deckId: string): SlideItemConfig | nu
   return parsed.success ? parsed.data : null;
 }
 
+/**
+ * Config for the editor preview while the draft is still incomplete: empty fields get their placeholder
+ * text, so the presenter sees the slide layout from the first keystroke. Never sent to the server.
+ */
+export function previewConfig(
+  draft: ItemDraft,
+  deckId: string,
+  placeholders: { prompt: string; option: (n: number) => string; statement: (n: number) => string },
+): SlideItemConfig | null {
+  const exact = toConfig(draft, deckId);
+  if (exact || draft.kind !== 'question') return exact;
+  const fill = (rows: { id: string; label: string }[], min: number, label: (n: number) => string) => {
+    const padded =
+      rows.length >= min
+        ? rows
+        : [...rows, ...Array.from({ length: min - rows.length }, () => ({ id: newShortId(), label: '' }))];
+    return padded.map((r, i) => ({ id: r.id, label: r.label.trim() || label(i + 1) }));
+  };
+  const options = fill(draft.options, 2, placeholders.option);
+  return toConfig(
+    {
+      ...draft,
+      prompt: draft.prompt.trim() || placeholders.prompt,
+      options,
+      statements: fill(draft.statements, 1, placeholders.statement),
+      quizCorrectOptionId: options.some((o) => o.id === draft.quizCorrectOptionId)
+        ? draft.quizCorrectOptionId
+        : (options[0]?.id ?? null),
+    },
+    deckId,
+  );
+}
+
 /** Same draft as a separate question (copy detection, "Als neue Frage verwenden"). */
 export function forkDraft(draft: ItemDraft): ItemDraft {
   return { ...draft, id: newUuid() };

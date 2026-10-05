@@ -70,15 +70,17 @@ A Pulse frame appears on the slide. If Pulse is not in the list, see [docs/sidel
 ## 4. Use it
 
 1. On a slide: *Insert → My Add-ins → Pulse*. Drag the frame so it fills the slide.
-2. Click **New live session for this presentation**, choose a slide type (e.g. *Multiple choice*), type the question.
-3. **Save the presentation** (Ctrl+S / Cmd+S) — the question lives in the file.
-4. Start the slideshow. The slide shows the question, a QR code and a 6-digit code. The audience opens the address
-   on the slide (or scans the QR code) and answers; results appear live.
-5. Afterwards: in the frame's **⋯ menu → Open results & export** → Excel/CSV.
+2. Pulse asks **"What would you like to ask?"** — pick a type (e.g. *Multiple choice*).
+3. Type the question and the answers. With a large enough frame you see a live preview next to the form.
+4. Click **Done**: the frame now shows the slide exactly as the audience will see it. Click it to edit again.
+5. **Save the presentation** (Ctrl+S / Cmd+S) — the question lives in the file.
+6. Start the slideshow. The slide shows the question, the address and a 6-digit code (QR code in the corner; while
+   nobody has answered yet it is shown large). Click the address bar on the slide to show QR code and code full
+   screen. Results appear live.
+7. Afterwards: in the editor's **⋯ menu → Open results & export** → Excel/CSV.
 
-More slides: insert another Pulse frame on the next slide and click **Connect to live session "…"** — all
-questions of a presentation share one code. Duplicating a Pulse slide is fine too: Pulse notices the copy and
-turns it into a new question.
+More slides: insert another Pulse frame and pick a type — all questions of a presentation share one code
+automatically. Duplicating a Pulse slide is fine too: Pulse notices the copy and turns it into a new question.
 
 The German one-page guide for lecturers is [docs/presenter-guide.de.md](docs/presenter-guide.de.md).
 

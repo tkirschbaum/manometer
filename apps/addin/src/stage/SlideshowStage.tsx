@@ -1,6 +1,29 @@
+import type { SlideItemConfig } from '@pulse/shared';
 import type { AddinController, ControllerState } from '../controller';
 import type { LiveState } from '../live/live';
-import { Stage } from './Stage';
+import { Stage, type StageData } from './Stage';
+
+/** Stage data from the file (join strip, prompt) plus live data when connected; shared by slideshow and edit view. */
+export function liveStageData(state: ControllerState, live: LiveState, config: SlideItemConfig | null): StageData {
+  const { deck, item: draft } = state.settings;
+  return {
+    language: deck?.settings.slideLanguage ?? 'de',
+    theme: deck?.settings.theme ?? 'light',
+    showQr: deck?.settings.showQr ?? true,
+    joinCode: deck?.joinCode ?? '',
+    baseUrl: [deck?.baseUrl, live.deck?.publicBaseUrl].find((url) => url) ?? '',
+    qaEnabled: deck?.settings.qaEnabled ?? false,
+    config,
+    draft,
+    item: live.item,
+    results: live.results,
+    participants: live.participants,
+    leaderboard: live.leaderboard,
+    qa: live.qa,
+    connected: live.status === 'connected' || !deck,
+    clockOffset: live.clockOffset,
+  };
+}
 
 /**
  * Read view (§6.6/§6.7). Renders from the file first (join strip, prompt) and fills in live data when the
@@ -15,28 +38,10 @@ export function SlideshowStage({
   state: ControllerState;
   live: LiveState;
 }) {
-  const { deck, item: draft } = state.settings;
-  const config = controller.config;
   const connected = live.status === 'connected';
   return (
     <Stage
-      data={{
-        language: deck?.settings.slideLanguage ?? 'de',
-        theme: deck?.settings.theme ?? 'light',
-        showQr: deck?.settings.showQr ?? true,
-        joinCode: deck?.joinCode ?? '',
-        baseUrl: [deck?.baseUrl, live.deck?.publicBaseUrl].find((url) => url) ?? '',
-        qaEnabled: deck?.settings.qaEnabled ?? false,
-        config,
-        draft,
-        item: live.item,
-        results: live.results,
-        participants: live.participants,
-        leaderboard: live.leaderboard,
-        qa: live.qa,
-        connected: connected || !deck,
-        clockOffset: live.clockOffset,
-      }}
+      data={liveStageData(state, live, controller.config)}
       actions={
         connected
           ? {
@@ -57,6 +62,7 @@ export function SlideshowStage({
             }
           : {}
       }
+      joinOverlay
     />
   );
 }

@@ -1,4 +1,4 @@
-import type { DeckLink, OfficeHost, View } from './types';
+import type { DeckLink, DocumentDeck, OfficeHost, View } from './types';
 import { deckLinkSchema } from '../model/schemas';
 
 /**
@@ -91,14 +91,17 @@ export function createHarnessHost(params: URLSearchParams): { host: OfficeHost; 
       window.open(url, '_blank', 'noopener');
     },
     readDocumentDeck: () => {
+      // ?docStore=0 simulates a PowerPoint without presentation tags (registry fallback).
+      if (params.get('docStore') === '0') return Promise.resolve<DocumentDeck>({ supported: false, link: null });
       try {
         const parsed = deckLinkSchema.safeParse(JSON.parse(window.localStorage.getItem(DOC_KEY) ?? 'null'));
-        return Promise.resolve(parsed.success ? parsed.data : null);
+        return Promise.resolve<DocumentDeck>({ supported: true, link: parsed.success ? parsed.data : null });
       } catch {
-        return Promise.resolve(null);
+        return Promise.resolve<DocumentDeck>({ supported: true, link: null });
       }
     },
     writeDocumentDeck: (link: DeckLink) => {
+      if (params.get('docStore') === '0') return Promise.resolve(false);
       window.localStorage.setItem(DOC_KEY, JSON.stringify(link));
       return Promise.resolve(true);
     },

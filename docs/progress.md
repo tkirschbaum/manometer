@@ -152,3 +152,60 @@ confirmation was fading in (test now waits for running transitions).
   once locally.
 - **office-js #6913** (central deployment of content add-ins) — check before a university-wide rollout.
 - Admin-center menu names for the rollout are **[VERIFY]** at rollout time.
+
+---
+
+## Revision after the first Mac test — workflow and slide design
+
+Tobias tested on the Mac ("really stunned"), with two points: creating questions was hard to understand, and the
+slides had too much and too large text. Both addressed; screenshots of every slide type (light/dark, 1440×810 and
+800×450) and of the editor (800×450 and 520×292) were reviewed before and after.
+
+### Editor workflow
+
+- **No "Live-Session" step.** A fresh frame asks "Was möchten Sie fragen?" and shows one card per type with a
+  one-line description. Picking a type links the presentation's deck automatically (document store) or creates it.
+  Only when the document store is unavailable, the most recently used deck on this computer (last 12 h) is
+  suggested, with a small "Ändern" to pick another or a new code. (`controller.pickKind`, `DeckChoice`;
+  `OfficeHost.readDocumentDeck` now reports whether the store is supported.)
+- **Edit → Fertig → slide.** The form has a primary *Fertig* button; afterwards the frame shows the slide exactly as
+  in the slideshow (live data, empty state with QR), so the edit view and PowerPoint's thumbnails look like the
+  real slide. Click anywhere (or *Bearbeiten*) to edit again. Incomplete slides open in the form. Clicking outside
+  the frame while the question is complete also returns to the slide.
+- **Live preview next to the form** when the frame is ≥ 760 px wide, from the first keystroke (placeholders fill
+  empty fields; never sent to the server). The separate *Vorschau* toggle is gone.
+- **Form:** essentials first (question, answers, scale statements, quiz time); everything else under *Weitere
+  Optionen* (multiple answers, results on click, results on phones, entries per person, quiz start mode). Marking
+  correct answers on a multiple-choice poll is now an explicit option instead of unlabelled boxes on every row.
+- Plain status line ("Bereit für die Präsentation", "Noch nicht vollständig: …", "Offline – …"); the save reminder
+  banner became a one-line hint in the footer. "Session-Einstellungen" → "Einstellungen der Präsentation".
+- A slide pasted from another presentation no longer overwrites that presentation's stored deck.
+
+### Slide design
+
+- Join strip 22 → 12 % of the frame height; host and "Code" 3.2cqh, code 5.6cqh (≈ 60 px at 1080p, still ≥ 56 px).
+- QR code in the strip at 9.5 % height; while nobody has answered (word cloud, open text, Q&A) it is shown large
+  (30 %) in the middle, and clicking the join strip in the slideshow shows QR code and code full screen.
+- One type scale for all slides: prompt 5.4/4.5/3.8cqh by length, content 3.0cqh, secondary 2.3cqh; footer smaller.
+- Multiple choice/quiz results: percentage only (count was duplicated by the footer total), no "0 %" before the first
+  answer, bars use the available height and start under the prompt.
+- Word cloud: words overlapped because d3-cloud places words by their baseline while they were rendered centred,
+  and the layout could run before the font was loaded. Now SVG text on the baseline, layout after `document.fonts`.
+- Open text: one text size for the whole wall (by number of cards) instead of per card.
+- Scale: axis numbers, end labels and "Durchschnitt" once for all statements instead of on every row.
+- Leaderboard in one column; Q&A list tighter; quiz idle state uses the same layout as the answering phase.
+
+### Deviations from the master prompt (requested by Tobias's feedback)
+
+| Spec | Now | Why |
+|---|---|---|
+| §6.1/§6.4: first frame shows "Neue Live-Session …", later frames "Mit Live-Session … verbinden" | type picker directly, deck linked/created automatically | the session concept was the main source of confusion |
+| §6.7: QR code in the join strip ≥ 18 % of the frame height | 9.5 % in the strip, 30 % while waiting for answers, full-screen on click | strip was the dominant element on every slide |
+| §6.7: "count + %" next to bars | percentage only | less text; total count is in the footer |
+| §6.8: *Vorschau* toggle | side-by-side preview, *Fertig* shows the real slide | WYSIWYG |
+| §11.7 example "Noch keine Antworten. Code: 482 913" | "Noch keine Antworten" + large QR code | the code is already in the strip |
+
+### Verified
+
+`pnpm typecheck`, `pnpm lint`, `pnpm test` (46/46) clean; e2e 38/38 (new: editor flow incl. second frame reusing
+the code, and the no-document-store suggestion; editor tests run in one project, 6 skipped by design).

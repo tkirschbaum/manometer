@@ -13,15 +13,16 @@ live auf der Folie. Keine App, kein Konto.
 ## 2. Frage anlegen
 
 1. Neue Folie → Pulse einfügen (wie oben). **Rahmen auf Foliengröße ziehen.**
-2. **Neue Live-Session für diese Präsentation** (bei weiteren Folien: **Mit Live-Session »…« verbinden** – alle
-   Fragen einer Präsentation teilen sich einen Code).
-3. **Folientyp wählen:** Mehrfachauswahl · Wortwolke · Offene Frage · Skala · Quiz · Rangliste · Fragen ans Publikum.
-4. Frage und Antworten eintippen. Mit **Vorschau** sehen Sie die Folie mit Beispieldaten.
+2. **»Was möchten Sie fragen?«** – Typ anklicken: Mehrfachauswahl, Wortwolke, Offene Frage, Skala, Quiz, Rangliste
+   oder Fragen ans Publikum. Alle Folien einer Präsentation bekommen automatisch denselben Code.
+3. Frage und Antworten eintippen. Ist der Rahmen groß genug, steht daneben eine Vorschau mit Beispieldaten.
+4. **Fertig** klicken: Der Rahmen zeigt jetzt die Folie so, wie das Publikum sie sieht. Zum Ändern einfach
+   hineinklicken (**Bearbeiten**).
 5. **Speichern (Strg+S / Cmd+S)** – die Fragen stehen in der .pptx-Datei.
 
-Optionen: *Ergebnisse – Sofort zeigen / Erst auf Klick zeigen*; beim Quiz Zeit pro Frage und *Start automatisch
-beim Folienwechsel* oder *per Klick auf der Folie*. Im Menü **⋯ → Session-Einstellungen**: Titel, Sprache auf den
-Folien (DE/EN), hell/dunkel, QR-Code, Fragen ans Publikum.
+Seltener gebraucht, unter **Weitere Optionen**: mehrere Antworten erlauben, richtige Antwort markieren, Ergebnisse
+erst auf Klick zeigen, Ergebnisse auch am Handy, Quiz-Start per Klick. Im Menü **⋯ → Einstellungen der
+Präsentation**: Titel, Sprache auf den Folien (DE/EN), hell/dunkel, QR-Code, Fragen ans Publikum.
 
 ## 3. Folien kopieren
 
@@ -33,15 +34,16 @@ alten Frage bleiben bei der alten Frage.
 
 1. Bildschirmpräsentation starten. Die Frage wird **automatisch aktiv, sobald ihre Folie gezeigt wird**, und
    beim Weiterklicken wieder inaktiv.
-2. Auf der Folie stehen **Adresse, 6-stelliger Code und QR-Code**. Die Studierenden scannen den QR-Code oder öffnen
-   die Adresse und geben den Code ein.
+2. Oben auf der Folie stehen **Adresse und 6-stelliger Code**, rechts ein kleiner QR-Code. Solange noch niemand
+   geantwortet hat, erscheint der QR-Code groß in der Mitte. Ein Klick auf die Adresszeile zeigt QR-Code und Code
+   bildschirmfüllend (nochmals klicken schließt).
 3. Ergebnisse erscheinen live. Bei *Erst auf Klick zeigen*: auf **Ergebnisse zeigen** klicken. Beim Quiz mit
    Klick-Start: **Quiz starten** klicken. Die **Rangliste** zeigt die zehn Besten aller Quizfragen.
 4. Referentenansicht mit zwei Bildschirmen funktioniert; verlorenes WLAN ist kein Problem – Pulse verbindet sich
    von selbst neu.
 
-**Fragen ans Publikum:** in den Session-Einstellungen einschalten, eine Folie vom Typ *Fragen ans Publikum*
-anlegen. Studierende stellen Fragen und stimmen für die besten ab (Reiter *Fragen* am Handy).
+**Fragen ans Publikum:** eine Folie vom Typ *Fragen ans Publikum* anlegen und dort **Fragen ans Publikum
+einschalten** klicken. Studierende stellen Fragen und stimmen für die besten ab (Reiter *Fragen* am Handy).
 
 ## 5. Nach der Vorlesung
 

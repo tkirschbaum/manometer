@@ -27,6 +27,9 @@ interface CloudWord {
   y?: number;
 }
 
+const FONT_FAMILY = "'Source Sans 3', 'Segoe UI', sans-serif";
+const FONT_WEIGHT = 600;
+
 /** Deterministic random so the same words give the same layout (stable cloud, §6.7). */
 function seeded(seed: number): () => number {
   let s = seed;
@@ -36,9 +39,30 @@ function seeded(seed: number): () => number {
   };
 }
 
+/** Resolves once the stage font can be measured; d3-cloud measures on a canvas, a fallback font would overlap. */
+function useFontReady(): boolean {
+  const [ready, setReady] = useState(() => typeof document === 'undefined' || !('fonts' in document));
+  useEffect(() => {
+    if (ready) return;
+    let cancelled = false;
+    const done = (): void => {
+      if (!cancelled) setReady(true);
+    };
+    document.fonts.load(`${FONT_WEIGHT} 32px 'Source Sans 3'`).then(done, done);
+    // Never wait forever (offline without the font cached): lay out with whatever is there.
+    const timer = setTimeout(done, 1500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [ready]);
+  return ready;
+}
+
 /**
  * Word cloud (§6.7): d3-cloud layout, re-laid out at most every 1.5 s, sizes by sqrt(frequency),
  * navy at varying weight with the single most frequent word in the accent colour.
+ * Rendered as SVG text because d3-cloud positions words by their baseline (x = centre, y = baseline).
  */
 export function WordCloud({
   words,
@@ -50,9 +74,11 @@ export function WordCloud({
   onHide?: (key: string) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const fontReady = useFontReady();
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const [placed, setPlaced] = useState<Placed[]>([]);
   const [input, setInput] = useState<Word[]>(words);
+  const [hovered, setHovered] = useState<string | null>(null);
   const lastLayout = useRef(0);
 
   useEffect(() => {
@@ -80,10 +106,10 @@ export function WordCloud({
   }, [words]);
 
   useEffect(() => {
-    if (size.w < 10 || size.h < 10 || input.length === 0) return;
+    if (!fontReady || size.w < 10 || size.h < 10 || input.length === 0) return;
     const max = Math.max(...input.map((w) => w.count));
-    const minFont = size.h * 0.06;
-    const maxFont = Math.min(size.h * 0.24, size.w * 0.12);
+    const minFont = size.h * 0.07;
+    const maxFont = Math.min(size.h * 0.22, size.w * 0.11);
     const layout = cloud<CloudWord>()
       .size([size.w, size.h])
       .words(
@@ -94,10 +120,10 @@ export function WordCloud({
           size: minFont + (maxFont - minFont) * Math.sqrt(w.count / max),
         })),
       )
-      .padding(Math.max(2, size.h * 0.012))
+      .padding(Math.max(3, size.h * 0.016))
       .rotate(0)
-      .font("'Source Sans 3', 'Segoe UI', sans-serif")
-      .fontWeight(600)
+      .font(FONT_FAMILY)
+      .fontWeight(FONT_WEIGHT)
       .fontSize((d) => d.size)
       .random(seeded(7))
       .on('end', (out) => {
@@ -116,38 +142,59 @@ export function WordCloud({
     return () => {
       layout.stop();
     };
-  }, [input, size.w, size.h]);
+  }, [input, size.w, size.h, fontReady]);
 
   const shown = input.length === 0 ? [] : placed;
+  const largest = shown[0]?.size ?? 1;
+  const hoveredWord = onHide ? shown.find((w) => w.key === hovered) : undefined;
   return (
-    <div ref={ref} className="cloud">
-      {shown.map((w) => (
-        <span
-          key={w.key}
-          className="cloud-word hideable"
-          style={{
-            left: w.x,
-            top: w.y,
-            fontSize: w.size,
-            color: w.rank === 0 ? 'var(--accent)' : 'var(--heading)',
-            opacity: w.rank === 0 ? 1 : 0.55 + 0.45 * (w.size / (placed[0]?.size ?? w.size)),
+    <div
+      ref={ref}
+      className="cloud"
+      onMouseLeave={() => {
+        setHovered(null);
+      }}
+    >
+      <svg width={size.w} height={size.h} aria-hidden="true">
+        {shown.map((w) => (
+          <text
+            key={w.key}
+            className="cloud-word"
+            textAnchor="middle"
+            style={{
+              transform: `translate(${w.x}px, ${w.y}px)`,
+              fontSize: w.size,
+              fill: w.rank === 0 ? 'var(--accent)' : 'var(--heading)',
+              opacity: w.rank === 0 ? 1 : 0.6 + 0.4 * (w.size / largest),
+            }}
+            onMouseEnter={() => {
+              setHovered(w.key);
+            }}
+          >
+            {w.text}
+          </text>
+        ))}
+      </svg>
+      {/* Screen readers get the words as a plain list. */}
+      <ul className="sr-only">
+        {shown.map((w) => (
+          <li key={w.key}>{w.text}</li>
+        ))}
+      </ul>
+      {hoveredWord && onHide ? (
+        <button
+          type="button"
+          className="hide-btn visible"
+          style={{ left: hoveredWord.x, top: Math.max(0, hoveredWord.y - hoveredWord.size * 1.1) }}
+          onClick={() => {
+            onHide(hoveredWord.key);
+            setHovered(null);
           }}
         >
-          {w.text}
-          {onHide ? (
-            <button
-              type="button"
-              className="hide-btn"
-              onClick={() => {
-                onHide(w.key);
-              }}
-            >
-              <EyeOffIcon />
-              {hideLabel}
-            </button>
-          ) : null}
-        </span>
-      ))}
+          <EyeOffIcon />
+          {hideLabel}
+        </button>
+      ) : null}
     </div>
   );
 }
