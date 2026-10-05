@@ -34,9 +34,9 @@ alten Frage bleiben bei der alten Frage.
 
 1. Bildschirmpräsentation starten. Die Frage wird **automatisch aktiv, sobald ihre Folie gezeigt wird**, und
    beim Weiterklicken wieder inaktiv.
-2. Oben auf der Folie stehen **Adresse und 6-stelliger Code**, rechts ein kleiner QR-Code. Solange noch niemand
-   geantwortet hat, erscheint der QR-Code groß in der Mitte. Ein Klick auf die Adresszeile zeigt QR-Code und Code
-   bildschirmfüllend (nochmals klicken schließt).
+2. Oben links steht der **6-stellige Code**, rechts ein kleiner QR-Code. Solange noch niemand geantwortet hat,
+   erscheint der QR-Code groß in der Mitte. Ein Klick auf die Code-Zeile zeigt QR-Code, Adresse und Code
+   bildschirmfüllend (nochmals klicken schließt) – praktisch für alle, die nicht scannen können.
 3. Ergebnisse erscheinen live. Bei *Erst auf Klick zeigen*: auf **Ergebnisse zeigen** klicken. Beim Quiz mit
    Klick-Start: **Quiz starten** klicken. Die **Rangliste** zeigt die zehn Besten aller Quizfragen.
 4. Referentenansicht mit zwei Bildschirmen funktioniert; verlorenes WLAN ist kein Problem – Pulse verbindet sich

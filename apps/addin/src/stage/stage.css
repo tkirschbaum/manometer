@@ -84,18 +84,9 @@
 }
 .stage-join {
   display: flex;
-  align-items: baseline;
-  gap: 1.6cqw;
+  align-items: center;
   min-width: 0;
   white-space: nowrap;
-}
-.stage-join-host {
-  font-size: 3.2cqh;
-  font-weight: 600;
-  color: var(--heading);
-  margin-right: 1.2cqw;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .stage-join-label {
   font-size: 3.2cqh;
@@ -738,9 +729,6 @@
   font-size: 5cqh;
   font-weight: 600;
   color: var(--heading);
-}
-.stage-overlay-text .stage-join-label {
-  font-size: 4cqh;
 }
 .stage-overlay-code {
   font-size: 13cqh;

@@ -43,8 +43,8 @@ with phones the address on the slide must be reachable (tunnel or server). Note 
 
 | # | Step | Expected | Result |
 |---|---|---|---|
-| C1 | Start the slideshow from slide 1 (one monitor) | Question, address and code in a slim bar, small QR code; layout fills the slide | W: · M: |
-| C1b | Click the address bar on the slide; click again | QR code and code full screen; second click closes it | W: · M: |
+| C1 | Start the slideshow from slide 1 (one monitor) | Question; only the 6-digit code in a slim bar, small QR code; layout fills the slide | W: · M: |
+| C1b | Click the code bar on the slide; click again | QR code, address and code full screen; second click closes it | W: · M: |
 | C2 | Three phones (iPhone + Android if possible) scan the QR code | Phones show the question; slide shows the responses as they answer | W: · M: |
 | C2b | Slide 2 (word cloud) before anyone answers | Large QR code in the middle with "No responses yet"; disappears with the first word | W: · M: |
 | C3 | Next slide (word cloud) | Phones switch to the word cloud within ~1 s; slide 1 is no longer active on the phones | W: · M: |

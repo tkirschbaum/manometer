@@ -183,7 +183,9 @@ slides had too much and too large text. Both addressed; screenshots of every sli
 
 ### Slide design
 
-- Join strip 22 → 12 % of the frame height; host and "Code" 3.2cqh, code 5.6cqh (≈ 60 px at 1080p, still ≥ 56 px).
+- Join strip 22 → 12 % of the frame height; only the six digits at 5.6cqh (≈ 60 px at 1080p, still ≥ 56 px). The
+  address and the word "Code" were removed from the strip at Tobias's request (they did not line up with the
+  digits); the address remains in the QR code and in the full-screen join view.
 - QR code in the strip at 9.5 % height; while nobody has answered (word cloud, open text, Q&A) it is shown large
   (30 %) in the middle, and clicking the join strip in the slideshow shows QR code and code full screen.
 - One type scale for all slides: prompt 5.4/4.5/3.8cqh by length, content 3.0cqh, secondary 2.3cqh; footer smaller.
@@ -200,6 +202,7 @@ slides had too much and too large text. Both addressed; screenshots of every sli
 | Spec | Now | Why |
 |---|---|---|
 | §6.1/§6.4: first frame shows "Neue Live-Session …", later frames "Mit Live-Session … verbinden" | type picker directly, deck linked/created automatically | the session concept was the main source of confusion |
+| §6.7: join strip "{APP_DOMAIN} · Code 482 913" | only "482 913"; address in the QR code and the full-screen join view | Tobias: no website name on the slide, label and digits did not line up |
 | §6.7: QR code in the join strip ≥ 18 % of the frame height | 9.5 % in the strip, 30 % while waiting for answers, full-screen on click | strip was the dominant element on every slide |
 | §6.7: "count + %" next to bars | percentage only | less text; total count is in the footer |
 | §6.8: *Vorschau* toggle | side-by-side preview, *Fertig* shows the real slide | WYSIWYG |

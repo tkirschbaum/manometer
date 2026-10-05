@@ -74,9 +74,9 @@ A Pulse frame appears on the slide. If Pulse is not in the list, see [docs/sidel
 3. Type the question and the answers. With a large enough frame you see a live preview next to the form.
 4. Click **Done**: the frame now shows the slide exactly as the audience will see it. Click it to edit again.
 5. **Save the presentation** (Ctrl+S / Cmd+S) — the question lives in the file.
-6. Start the slideshow. The slide shows the question, the address and a 6-digit code (QR code in the corner; while
-   nobody has answered yet it is shown large). Click the address bar on the slide to show QR code and code full
-   screen. Results appear live.
+6. Start the slideshow. The slide shows the question and the 6-digit code, with a small QR code in the corner
+   (shown large while nobody has answered yet). Click the code bar to show QR code, address and code full screen.
+   Results appear live.
 7. Afterwards: in the editor's **⋯ menu → Open results & export** → Excel/CSV.
 
 More slides: insert another Pulse frame and pick a type — all questions of a presentation share one code

@@ -107,9 +107,9 @@ export function Stage({
 
   const strip = data.joinCode ? (
     <>
+      {/* Only the six digits on the slide; the address is in the QR code and in the full-screen join view. */}
       <span className="stage-join">
-        {join.host ? <span className="stage-join-host">{join.host}</span> : null}
-        <span className="stage-join-label">{t('stage.code')}</span>
+        <span className="sr-only">{t('stage.code')} </span>
         <span className="stage-join-code tabular">{join.code}</span>
       </span>
       {join.showQr ? (
@@ -167,7 +167,6 @@ export function Stage({
           ) : null}
           <span className="stage-overlay-text">
             {join.host ? <span className="stage-overlay-host">{join.host}</span> : null}
-            <span className="stage-join-label">{t('stage.code')}</span>
             <span className="stage-overlay-code tabular">{join.code}</span>
           </span>
         </button>
