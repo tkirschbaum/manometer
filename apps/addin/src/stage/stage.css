@@ -459,15 +459,10 @@
   display: block;
   overflow: hidden;
 }
-.cloud-group {
-  transition: transform 400ms ease-out;
-}
 .cloud-word {
   font-family: 'Figtree', 'Segoe UI', sans-serif;
   font-weight: 700;
-  transition:
-    transform 400ms ease-out,
-    opacity 250ms ease-out;
+  transition: opacity 250ms ease-out;
   animation: stage-fade 250ms ease-out;
 }
 

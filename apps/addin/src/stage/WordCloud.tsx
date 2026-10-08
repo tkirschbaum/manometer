@@ -101,9 +101,8 @@ export function WordCloud({
   const fontVersion = useFontVersion();
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const [placed, setPlaced] = useState<Placed[]>([]);
-  const [fit, setFit] = useState<Fit>({ scale: 1, x: 0, y: 0 });
   const [input, setInput] = useState<Word[]>(words);
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<{ key: string; left: number; top: number } | null>(null);
   const lastLayout = useRef(0);
 
   useEffect(() => {
@@ -185,7 +184,8 @@ export function WordCloud({
 
   const shown = useMemo(() => (input.length === 0 ? [] : placed), [input, placed]);
 
-  // Measure the rendered words (their own boxes, independent of a running move transition) and fit the group.
+  // Measure the rendered words and fit the group. Positions are SVG attributes, not CSS transforms: PowerPoint's Mac
+  // web view (WebKit) placed CSS-transformed SVG text elsewhere than Chromium, so words ended up off the slide.
   useLayoutEffect(() => {
     const g = group.current;
     if (!g || shown.length === 0 || size.w < 10) return;
@@ -194,31 +194,26 @@ export function WordCloud({
     let y0 = Infinity;
     let x1 = -Infinity;
     let y1 = -Infinity;
-    shown.forEach((w, i) => {
-      const text = texts[i];
-      if (!text) return;
+    texts.forEach((text) => {
       const box = text.getBBox();
-      x0 = Math.min(x0, w.x + box.x);
-      y0 = Math.min(y0, w.y + box.y);
-      x1 = Math.max(x1, w.x + box.x + box.width);
-      y1 = Math.max(y1, w.y + box.y + box.height);
+      x0 = Math.min(x0, box.x);
+      y0 = Math.min(y0, box.y);
+      x1 = Math.max(x1, box.x + box.width);
+      y1 = Math.max(y1, box.y + box.height);
     });
     if (!Number.isFinite(x0) || x1 <= x0 || y1 <= y0) return;
     const margin = Math.max(4, Math.min(size.w, size.h) * 0.02);
     const scale = Math.min(1, (size.w - 2 * margin) / (x1 - x0), (size.h - 2 * margin) / (y1 - y0));
-    const next = {
+    const next: Fit = {
       scale,
       x: size.w / 2 - ((x0 + x1) / 2) * scale,
       y: size.h / 2 - ((y0 + y1) / 2) * scale,
     };
-    setFit((prev) =>
-      Math.abs(prev.scale - next.scale) < 0.001 && Math.abs(prev.x - next.x) < 0.5 && Math.abs(prev.y - next.y) < 0.5
-        ? prev
-        : next,
-    );
+    // Applied directly to the group (no re-render).
+    g.setAttribute('transform', `translate(${String(next.x)} ${String(next.y)}) scale(${String(next.scale)})`);
   }, [shown, size.w, size.h, fontVersion]);
 
-  const hoveredWord = onHide ? shown.find((w) => w.key === hovered) : undefined;
+  const hoveredWord = onHide && hovered && shown.some((w) => w.key === hovered.key) ? hovered : null;
   return (
     <div
       ref={ref}
@@ -228,23 +223,28 @@ export function WordCloud({
       }}
     >
       <svg width={size.w} height={size.h} aria-hidden="true">
-        <g
-          ref={group}
-          className="cloud-group"
-          style={{ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`, transformOrigin: '0 0' }}
-        >
+        <g ref={group} className="cloud-group">
           {shown.map((w) => (
             <text
               key={w.key}
               className="cloud-word"
+              x={w.x}
+              y={w.y}
               textAnchor="middle"
               style={{
-                transform: `translate(${w.x}px, ${w.y}px)`,
                 fontSize: w.size,
                 fill: `var(--c${String(TONES[w.rank % TONES.length] ?? 1)})`,
               }}
-              onMouseEnter={() => {
-                setHovered(w.key);
+              onMouseEnter={(e) => {
+                // Position from the rendered word, so it matches whatever scale the cloud was fitted to.
+                const word = e.currentTarget.getBoundingClientRect();
+                const box = ref.current?.getBoundingClientRect();
+                if (!box) return;
+                setHovered({
+                  key: w.key,
+                  left: word.left + word.width / 2 - box.left,
+                  top: Math.max(0, word.top - box.top - word.height * 0.2),
+                });
               }}
             >
               {w.text}
@@ -263,8 +263,8 @@ export function WordCloud({
           type="button"
           className="hide-btn visible"
           style={{
-            left: fit.x + hoveredWord.x * fit.scale,
-            top: Math.max(0, fit.y + (hoveredWord.y - hoveredWord.size * 1.1) * fit.scale),
+            left: hoveredWord.left,
+            top: hoveredWord.top,
           }}
           onClick={() => {
             onHide(hoveredWord.key);
