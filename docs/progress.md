@@ -212,3 +212,30 @@ slides had too much and too large text. Both addressed; screenshots of every sli
 
 `pnpm typecheck`, `pnpm lint`, `pnpm test` (46/46) clean; e2e 38/38 (new: editor flow incl. second frame reusing
 the code, and the no-document-store suggestion; editor tests run in one project, 6 skipped by design).
+
+---
+
+## Fix after the second Mac test — text size and long texts on slides
+
+Tobias's slideshow screenshot (scale slide, 10 steps, three statements) showed all text about **2× too large**
+while boxes (strip, scale cells) had the intended size: the prompt wrapped to two huge lines, "Informationsfluss"
+broke mid-word, and the rows ran into the footer. Measured from the screenshot: prompt 115 px instead of 58 px,
+code 126 px instead of 60 px, "Durchschnitt" 47 px instead of 24 px; widths and heights in `cqw`/`cqh` were exact.
+So PowerPoint's Mac web view (WebKit) resolved **container query units in `font-size`** differently from boxes —
+also the likely reason the first Mac test found the slides' text "too big". Chromium (used for all automated
+tests) renders them correctly, which is why the screenshots here looked right.
+
+Changes:
+- **No container query units on the stage any more.** `Stage.tsx` measures the frame (ResizeObserver) and sets
+  `--u0`/`--uw0` (1 % of height/width in px); all stage sizes use `calc(N * var(--u))`. Works the same in every
+  engine and in the editor preview.
+- **Shrink to fit:** if the question needs more than its lines (2, or 3 for long questions) or the chart would
+  overflow, the font/row scale steps down by 5 % (question to 60 %, chart to 50 %) until it fits. Glyph overhang
+  of a few pixels does not count as overflow. The chart area clips, so nothing can run into the footer.
+- **Long texts wrap instead of being cut:** answers in bar charts and quiz options use up to two lines; statement
+  labels, cards and questions hyphenate (`hyphens: auto`, slide language as `lang`) instead of breaking mid-word.
+- Design gallery has worst-case samples (`scale_user`, `scale_long`, `multiple_choice_long`, `quiz_long`) at the
+  input limits; checked at 1920×1080, 800×450, 560×315, 960×720 (4:3) and 1280×540.
+
+Not verifiable here: WebKit itself (only Chromium in this container). The fix avoids the mechanism instead of
+relying on a WebKit behaviour; please confirm on the Mac.

@@ -68,6 +68,71 @@ const SAMPLES: Record<string, SlideItemConfig> = {
   },
   leaderboard: { id: id(6), deckId, schemaVersion: 1, kind: 'leaderboard' },
   qa_wall: { id: id(7), deckId, schemaVersion: 1, kind: 'qa_wall' },
+  // Worst cases for layout review: long texts up to the input limits.
+  scale_user: {
+    ...base,
+    id: id(8),
+    type: 'scale',
+    prompt: 'Die aktuelle Situation in deinem Unternehmen?',
+    statements: [
+      { id: 's1', label: 'Informationsfluss' },
+      { id: 's2', label: 'Qualität der Besprechungen' },
+      { id: 's3', label: 'Sicherheit' },
+    ],
+    range: 10,
+    minLabel: 'schlecht',
+    maxLabel: 'toll',
+  },
+  scale_long: {
+    ...base,
+    id: id(9),
+    type: 'scale',
+    prompt:
+      'Wie bewerten Sie die Zusammenarbeit zwischen den Abteilungen, die Qualität der Einarbeitung neuer Kolleginnen und Kollegen und die Verfügbarkeit von Informationen im Arbeitsalltag?',
+    statements: [
+      { id: 's1', label: 'Zusammenarbeit zwischen Pflege, ärztlichem Dienst und Verwaltung im Stationsalltag' },
+      { id: 's2', label: 'Einarbeitungskonzept und Mentoringprogramm für neue Mitarbeiterinnen und Mitarbeiter' },
+      { id: 's3', label: 'Informationsweitergabe bei Schichtübergaben' },
+    ],
+    range: 10,
+    minLabel: 'trifft gar nicht zu',
+    maxLabel: 'trifft voll und ganz zu',
+  },
+  multiple_choice_long: {
+    ...base,
+    id: id(10),
+    type: 'multiple_choice',
+    prompt:
+      'Welche der folgenden Maßnahmen halten Sie für am wirksamsten, um die Patientensicherheit auf einer chirurgischen Normalstation nachhaltig zu verbessern?',
+    options: [
+      { id: 'a', label: 'Standardisierte Übergaben nach dem SBAR-Schema bei jedem Schichtwechsel' },
+      { id: 'b', label: 'Regelmäßige interprofessionelle Fallbesprechungen' },
+      { id: 'c', label: 'Elektronische Medikationsverordnung mit Wechselwirkungsprüfung' },
+      { id: 'd', label: 'Checklisten vor operativen Eingriffen' },
+      { id: 'e', label: 'Mehr Personal' },
+      { id: 'f', label: 'Fehlermeldesystem (CIRS) mit verbindlicher Rückmeldung an die meldende Person' },
+      { id: 'g', label: 'Simulationstraining für Notfallsituationen' },
+      { id: 'h', label: 'Keine der genannten' },
+    ],
+    allowMultiple: true,
+  },
+  quiz_long: {
+    ...base,
+    id: id(11),
+    type: 'quiz',
+    prompt: 'Welches Enzym wird bei einer akuten Pankreatitis typischerweise im Serum bestimmt?',
+    options: [
+      { id: 'a', label: 'Lipase (spezifischer als Amylase, bleibt länger erhöht)' },
+      { id: 'b', label: 'Alkalische Phosphatase' },
+      { id: 'c', label: 'Kreatinkinase' },
+      { id: 'd', label: 'Laktatdehydrogenase' },
+      { id: 'e', label: 'Gamma-Glutamyltransferase' },
+      { id: 'f', label: 'Troponin T' },
+    ],
+    correctOptionId: 'a',
+    timeLimitSec: 30,
+    startMode: 'auto',
+  },
 };
 
 /**

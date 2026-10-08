@@ -15,7 +15,7 @@ import {
   type Theme,
   type Translate,
 } from '@pulse/shared';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ItemLiveState } from '../live/live';
 import type { ItemDraft } from '../model/schemas';
 import { ArrowUpIcon, CheckIcon, EyeOffIcon, PersonIcon } from '../ui/icons';
@@ -72,6 +72,67 @@ function useNow(active: boolean, offset: number): number {
   return now;
 }
 
+/**
+ * True when `el` hides content. Glyphs (descenders, accents) may stick out of their line box by a few pixels;
+ * that is not an overflow, so up to `slack` px are tolerated. A hidden extra line is always far more.
+ */
+function overflows(el: HTMLElement, slack: number): boolean {
+  return el.scrollHeight - el.clientHeight > slack || el.scrollWidth - el.clientWidth > slack;
+}
+
+/** Lowers `prop` (a scale factor used in stage.css) in 5 % steps until `el` no longer overflows, down to `min`. */
+function shrinkToFit(el: HTMLElement | null, prop: string, min: number, slack: (el: HTMLElement) => number): void {
+  if (!el) return;
+  let factor = 1;
+  el.style.setProperty(prop, '1');
+  while (factor > min && overflows(el, slack(el))) {
+    factor = Math.round((factor - 0.05) * 100) / 100;
+    el.style.setProperty(prop, String(factor));
+  }
+}
+
+/** Prompt: half a line. Visualisation: 1 % of its height plus 2 px. */
+const promptSlack = (el: HTMLElement): number => parseFloat(getComputedStyle(el).fontSize) * 0.5;
+const vizSlack = (el: HTMLElement): number => el.clientHeight * 0.01 + 2;
+
+function fitStage(prompt: HTMLElement | null, viz: HTMLElement | null): void {
+  shrinkToFit(prompt, '--pfit', 0.6, promptSlack);
+  shrinkToFit(viz, '--fit', 0.5, vizSlack);
+}
+
+/**
+ * Sizes the stage from its measured frame (--u0/--uw0 in px, see stage.css) and fits prompt and visualisation
+ * into the available space. Runs before paint, again on every resize and whenever `contentKey` changes.
+ */
+function useStageLayout(contentKey: string) {
+  const root = useRef<HTMLDivElement>(null);
+  const prompt = useRef<HTMLHeadingElement>(null);
+  const viz = useRef<HTMLDivElement>(null);
+  const fit = (): void => {
+    fitStage(prompt.current, viz.current);
+  };
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const measure = (): void => {
+      const { width, height } = el.getBoundingClientRect();
+      if (width < 1 || height < 1) return;
+      el.style.setProperty('--u0', `${height / 100}px`);
+      el.style.setProperty('--uw0', `${width / 100}px`);
+      fitStage(prompt.current, viz.current);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+  // Re-fit only when the content changes (resizes are handled above).
+  useLayoutEffect(fit, [contentKey]);
+  return { root, prompt, viz };
+}
+
 function promptSize(text: string): string {
   if (text.length <= 50) return 'size-l';
   if (text.length <= 110) return 'size-m';
@@ -104,6 +165,22 @@ export function Stage({
   const prompt = config?.kind === 'question' ? config.prompt : data.draft?.kind === 'question' ? data.draft.prompt : '';
   const title =
     config?.kind === 'leaderboard' ? t('stage.leaderboard') : config?.kind === 'qa_wall' ? t('stage.qaTitle') : prompt;
+  const {
+    root: rootRef,
+    prompt: promptRef,
+    viz: vizRef,
+  } = useStageLayout(
+    JSON.stringify([
+      title,
+      config,
+      data.language,
+      data.item?.state,
+      data.item?.revealed,
+      data.results === null,
+      data.leaderboard?.entries.length,
+      data.qa.map((q) => q.id),
+    ]),
+  );
 
   const strip = data.joinCode ? (
     <>
@@ -123,7 +200,7 @@ export function Stage({
   );
 
   return (
-    <div className={`stage theme-${data.theme}`} lang={data.language}>
+    <div ref={rootRef} className={`stage theme-${data.theme}`} lang={data.language}>
       {joinOverlay && data.joinCode ? (
         <button
           type="button"
@@ -139,8 +216,12 @@ export function Stage({
         <header className="stage-strip">{strip}</header>
       )}
       <div className="stage-body">
-        {title ? <h1 className={`stage-prompt ${promptSize(title)}`}>{title}</h1> : null}
-        <div className={`stage-viz ${data.connected ? '' : 'stale'}`}>
+        {title ? (
+          <h1 ref={promptRef} className={`stage-prompt ${promptSize(title)}`}>
+            {title}
+          </h1>
+        ) : null}
+        <div ref={vizRef} className={`stage-viz ${data.connected ? '' : 'stale'}`}>
           <Visualisation data={data} actions={actions} t={t} join={join} />
         </div>
       </div>

@@ -42,6 +42,8 @@ In the cloud container Chromium is at `PW_CHROMIUM_EXECUTABLE=/opt/pw-browsers/c
   (logs, database); no answer texts in logs. Retention default 90 days.
 - All UI strings go through the dictionaries (DE and EN, identical keys). German UI copy: short and impersonal ("Bitte … prüfen"), no "du".
 - New runtime dependencies only with a reason in `docs/progress.md` (§2 lists the fixed stack).
+- Stage (slide) sizes: use `var(--u)`/`var(--uw)` (1 % of the measured frame height/width, set in `Stage.tsx`),
+  never container query units (`cqh`/`cqw`): PowerPoint's Mac web view rendered font sizes in cq units ~2× too large.
 - Add-in: no history API routing (Office.js nulls `history.pushState`; `public/history-guard.js`), feature-detect
   every API beyond the common API, keep `PowerPoint.run` calls behind `OfficeHost` with fallbacks.
 - Tests: domain logic → Vitest unit tests; server flows → `apps/server/test` (real database); participant flows →
