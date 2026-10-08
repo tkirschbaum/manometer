@@ -33,6 +33,11 @@ export const TIMING = {
   qaThrottleMs: 250,
   /** Active item survives a lost presenter socket this long. */
   activeGraceMs: 10_000,
+  /**
+   * After a slide is left, phones keep its question this long. If the next Pulse slide activates in the
+   * meantime (its frame needs 1–2 s to load), phones switch straight to it instead of flashing the waiting screen.
+   */
+  handoverMs: 2500,
   quizCountdownMs: 3000,
   quizLateGraceMs: 300,
   slidePollMs: 1000,

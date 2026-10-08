@@ -90,7 +90,10 @@ test.describe('participant flows with the add-in harness as presenter', () => {
     await presenter.page.context().close();
   });
 
-  test('quiz: nickname, countdown, answer, result with points and rank', async ({ page, browser }, info) => {
+  test('quiz with names: name right after joining, countdown, answer, result with points and rank', async ({
+    page,
+    browser,
+  }, info) => {
     test.setTimeout(90_000);
     const t = translator(info);
     const presenter = await openPresenter(browser, {
@@ -104,13 +107,41 @@ test.describe('participant flows with the add-in harness as presenter', () => {
       timeLimitSec: 20,
     });
     await join(page, presenter.code);
+    await expect(page.getByRole('heading', { name: t('join.nameTitle') })).toBeVisible();
     await page.getByLabel(t('quiz.nicknameLabel')).fill('Tester');
-    await page.getByRole('button', { name: t('quiz.nicknameSave') }).click();
+    await page.getByRole('button', { name: t('join.nameSubmit') }).click();
+    await expect(page.getByText(t('quiz.playingAs', { name: 'Tester' }))).toBeVisible();
     await page.getByRole('button', { name: '7,4' }).click({ timeout: 20_000 });
     await expect(page.getByText(t('session.sent'))).toBeVisible();
     await expect(page.getByText(t('quiz.correct'))).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(t('quiz.rank', { rank: 1, total: 1 }))).toBeVisible();
     await expect(presenter.page.locator('.bar-row').nth(1)).toContainText('1');
+    await presenter.page.context().close();
+  });
+
+  test('anonymous quiz: no name prompt, the server assigns a name', async ({ page, browser }, info) => {
+    test.setTimeout(90_000);
+    const t = translator(info);
+    const presenter = await openPresenter(
+      browser,
+      {
+        type: 'quiz',
+        prompt: 'Hauptstadt von Österreich?',
+        options: [
+          { id: 'a', label: 'Wien' },
+          { id: 'b', label: 'Graz' },
+        ],
+        quizCorrectOptionId: 'a',
+        timeLimitSec: 20,
+      },
+      { quizNames: 'anonymous' },
+    );
+    await join(page, presenter.code);
+    await page.getByRole('button', { name: 'Wien' }).click({ timeout: 20_000 });
+    await expect(page.getByLabel(t('quiz.nicknameLabel'))).toHaveCount(0);
+    await expect(page.getByText(t('session.sent'))).toBeVisible();
+    await expect(page.getByText(t('quiz.correct'))).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(t('quiz.rank', { rank: 1, total: 1 }))).toBeVisible();
     await presenter.page.context().close();
   });
 
@@ -135,7 +166,8 @@ test.describe('participant flows with the add-in harness as presenter', () => {
     await join(page, presenter.code);
     await expect(page.getByRole('heading', { name: 'Folie A' })).toBeVisible();
     await presenter.page.getByTestId('harness-show-other').click();
-    await expect(page.getByText(t('session.waiting'))).toBeVisible();
+    // After the handover window (TIMING.handoverMs), not at once: a following Pulse slide would take over directly.
+    await expect(page.getByText(t('session.waiting'))).toBeVisible({ timeout: 10_000 });
     await presenter.page.getByTestId('harness-show-this').click();
     await expect(page.getByRole('heading', { name: 'Folie A' })).toBeVisible();
     await presenter.page.context().close();

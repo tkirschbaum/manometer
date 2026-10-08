@@ -1,38 +1,31 @@
 /**
- * Design tokens (master prompt §11).
- *
- * PROVISIONAL: the klu tokens could not be extracted yet (the build environment's network policy blocks
- * www.kl.ac.at). These are the provisional values from §11.1 step 4; teal and ochre are derived per §11.4.
- * Replace them here and in the two `@theme` blocks (apps/addin/src/index.css, apps/participant/src/index.css)
- * once docs/brand-tokens.md is filled from the real stylesheets.
+ * Design tokens. Pulse has its own look (no longer the provisional klu tokens): a friendly indigo-blue primary,
+ * a coral "live" accent and a six-colour chart palette, set in Figtree. Keep in sync with the `@theme` blocks
+ * (apps/addin/src/index.css, apps/participant/src/index.css) and the stage variables (apps/addin/src/stage/stage.css).
+ * Contrast: every chart colour ≥ 3:1 against white except amber, which always carries dark text (docs/brand-tokens.md).
  */
-export const TOKENS_PROVISIONAL = true;
-
 export const tokens = {
   color: {
-    navy: '#1B2A4A',
-    red: '#C8102E',
-    ink: '#1A1F2B',
-    paper: '#FFFFFF',
-    mist: '#EEF1F5',
-    line: '#D5DBE3',
-    muted: '#5B6573',
-    /** Derived secondary colours for quiz options (≥ 3:1 against paper). */
-    teal: '#1F6F6B',
-    ochre: '#8F6410',
+    ink: '#101834',
+    muted: '#5d6585',
+    line: '#e2e5ef',
+    mist: '#f4f5fa',
+    paper: '#ffffff',
+    primary: '#3d5af1',
+    primaryDark: '#2c45d1',
+    primarySoft: '#eef1ff',
+    coral: '#f0574a',
   },
-  radius: '6px',
-  fontFamily: "'Source Sans 3', 'Segoe UI', system-ui, sans-serif",
+  /** Chart and quiz colours in option order. */
+  palette: ['#3d5af1', '#f0574a', '#f5a524', '#16a37f', '#7c5cf0', '#e04a8a'],
+  /** Text colour on a filled palette tile (amber needs dark text). */
+  paletteText: ['#ffffff', '#ffffff', '#101834', '#ffffff', '#ffffff', '#ffffff'],
+  radius: '14px',
+  fontFamily: "'Figtree', 'Segoe UI', system-ui, sans-serif",
 } as const;
 
-/** Quiz option identity: shape first, colour second (§11.4). */
+/** Quiz option identity: shape first, colour second. */
 export const QUIZ_SHAPES = ['triangle', 'diamond', 'circle', 'square', 'triangle-down', 'hexagon'] as const;
 export type QuizShape = (typeof QUIZ_SHAPES)[number];
-export const QUIZ_COLORS = [
-  tokens.color.navy,
-  tokens.color.red,
-  tokens.color.teal,
-  tokens.color.ochre,
-  tokens.color.navy,
-  tokens.color.red,
-] as const;
+export const QUIZ_COLORS = tokens.palette;
+export const QUIZ_TEXT_COLORS = tokens.paletteText;

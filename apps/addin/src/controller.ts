@@ -8,6 +8,7 @@ import {
   type DeckSettings,
   type SlideItemConfig,
 } from '@pulse/shared';
+import { liveCache } from './live/cache';
 import { Live } from './live/live';
 import { forkDraft, missingFields, newDraft, toConfig, type MissingKey, type SlideKind } from './model/draft';
 import { Heartbeat } from './model/heartbeat';
@@ -142,6 +143,7 @@ export class AddinController {
   start(): void {
     if (this.started) return;
     this.started = true;
+    liveCache.purge();
     void this.host.getView().then((view) => {
       this.setView(view);
     });

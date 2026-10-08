@@ -15,7 +15,7 @@ import {
   type Theme,
   type Translate,
 } from '@pulse/shared';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { ItemLiveState } from '../live/live';
 import type { ItemDraft } from '../model/schemas';
 import { ArrowUpIcon, CheckIcon, EyeOffIcon, PersonIcon } from '../ui/icons';
@@ -226,11 +226,15 @@ export function Stage({
         </div>
       </div>
       <footer className="stage-footer">
-        <span className="stage-count tabular">
-          <PersonIcon />
-          {footerCount(data, t)}
-        </span>
-        {!data.connected ? <span className="stage-conn">{t('stage.reconnecting')}</span> : null}
+        <span className="stage-count tabular">{footerCount(data, t)}</span>
+        {!data.connected ? (
+          <span className="stage-conn">{t('stage.reconnecting')}</span>
+        ) : data.participants > 0 ? (
+          <span className="stage-live tabular">
+            <PersonIcon />
+            {plural(t, 'stage.joined', data.participants, formatNumber(data.participants, data.language))}
+          </span>
+        ) : null}
       </footer>
       {overlay ? (
         <button
@@ -263,6 +267,12 @@ function footerCount(data: StageData, t: Translate): string {
   return plural(t, 'stage.responses', n, formatNumber(n, data.language));
 }
 
+/** CSS custom properties for option `index` (palette colour and the text colour on it). */
+function tone(index: number): CSSProperties {
+  const n = (index % 6) + 1;
+  return { '--c': `var(--c${n})`, '--on-c': `var(--on-c${n})` } as CSSProperties;
+}
+
 /** Calm placeholder; while nobody has answered, the QR code is shown large (people are joining now). */
 function Waiting({ join, children }: { join?: Join; children: ReactNode }) {
   return (
@@ -293,7 +303,9 @@ function Visualisation({
   if (config.kind === 'leaderboard') return <Leaderboard view={data.leaderboard} t={t} language={data.language} />;
   if (config.kind === 'qa_wall') {
     if (!data.qaEnabled) return <Waiting>{t('stage.qaDisabled')}</Waiting>;
-    if (data.qa.length === 0) return <Waiting join={join}>{t('stage.qaEmpty')}</Waiting>;
+    if (data.qa.length === 0) {
+      return <Waiting join={join}>{t('stage.qaEmpty')}</Waiting>;
+    }
     return <QaWall items={data.qa} t={t} actions={actions} />;
   }
   switch (config.type) {
@@ -301,17 +313,18 @@ function Visualisation({
       const hidden = config.resultsVisibility === 'on_reveal' && !(data.item?.revealed ?? false);
       const counts = results?.type === 'multiple_choice' ? results.counts : {};
       const correct = data.item?.revealed && config.correctOptionIds?.length ? new Set(config.correctOptionIds) : null;
+      const chart = {
+        options: config.options,
+        counts,
+        total: results?.respondents ?? 0,
+        correct,
+        hidden,
+        language: data.language,
+        t,
+      };
       return (
         <div className="stage-fill">
-          <Bars
-            options={config.options}
-            counts={counts}
-            total={results?.respondents ?? 0}
-            correct={correct}
-            hidden={hidden}
-            language={data.language}
-            t={t}
-          />
+          {fitsColumns(config.options) ? <Columns {...chart} /> : <Bars {...chart} />}
           {hidden ? (
             <div className="stage-hint">
               <span>{t('stage.hiddenUntilReveal')}</span>
@@ -327,7 +340,9 @@ function Visualisation({
     }
     case 'word_cloud': {
       const words = results?.type === 'word_cloud' ? results.words : [];
-      if (words.length === 0) return <Waiting join={join}>{t('stage.empty')}</Waiting>;
+      if (words.length === 0) {
+        return <Waiting join={join}>{t('stage.empty')}</Waiting>;
+      }
       return (
         <WordCloud
           words={words.slice(0, DISPLAY.wordCloudMaxWords)}
@@ -338,7 +353,9 @@ function Visualisation({
     }
     case 'open_text': {
       const entries = results?.type === 'open_text' ? results.entries : [];
-      if (entries.length === 0) return <Waiting join={join}>{t('stage.empty')}</Waiting>;
+      if (entries.length === 0) {
+        return <Waiting join={join}>{t('stage.empty')}</Waiting>;
+      }
       return (
         <Wall
           entries={entries}
@@ -358,17 +375,7 @@ function Visualisation({
 
 // ---------------------------------------------------------------------------------------------
 
-/** Horizontal bars in option order (§6.7): label, bar, percentage. The absolute total is in the footer. */
-function Bars({
-  options,
-  counts,
-  total,
-  correct,
-  language,
-  t,
-  hidden = false,
-  shapes = false,
-}: {
+interface ChartProps {
   options: { id: string; label: string }[];
   counts: Record<string, number>;
   total: number;
@@ -377,7 +384,49 @@ function Bars({
   t: Translate;
   hidden?: boolean;
   shapes?: boolean;
-}) {
+}
+
+/** Columns read best for a handful of short answers (Mentimeter-style); long or many answers use bars. */
+function fitsColumns(options: { label: string }[]): boolean {
+  return options.length <= 6 && options.every((o) => o.label.length <= 42);
+}
+
+function percentLabel(n: number, total: number, hidden: boolean, language: Language): string {
+  return hidden || total === 0 ? '' : formatPercent(n, total, language);
+}
+
+/** Vertical columns, one colour per answer, percentage on top, answer below. */
+function Columns({ options, counts, total, correct, language, t, hidden = false, shapes = false }: ChartProps) {
+  // The tallest column uses the full height (the labels carry the percentages), as on Mentimeter.
+  const peak = Math.max(1, ...options.map((o) => (hidden ? 0 : (counts[o.id] ?? 0))));
+  return (
+    <div className="cols" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+      {options.map((o, index) => {
+        const n = hidden ? 0 : (counts[o.id] ?? 0);
+        const isCorrect = correct?.has(o.id) ?? false;
+        return (
+          <div key={o.id} className={`bar-row col ${correct && !isCorrect ? 'dim' : ''}`} style={tone(index)}>
+            <div className="col-plot">
+              <span className="bar-value tabular" title={formatNumber(n, language)}>
+                {percentLabel(n, total, hidden, language)}
+              </span>
+              {/* 82 %: the percentage label always has room above the tallest column. */}
+              <div className="col-bar" style={{ height: `${(n / peak) * 82}%` }} />
+            </div>
+            <div className="col-label">
+              {shapes ? <QuizShape index={index} /> : null}
+              <span className="bar-text">{o.label}</span>
+              {isCorrect ? <CheckIcon aria-label={t('stage.correct')} strokeWidth={3} /> : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Horizontal bars in option order: label, bar, percentage. Used for many or long answers. */
+function Bars({ options, counts, total, correct, language, t, hidden = false, shapes = false }: ChartProps) {
   return (
     <div className={`bars ${options.length > 5 ? 'dense' : ''}`}>
       {options.map((o, index) => {
@@ -385,7 +434,7 @@ function Bars({
         const pct = total > 0 ? (n / total) * 100 : 0;
         const isCorrect = correct?.has(o.id) ?? false;
         return (
-          <div key={o.id} className={`bar-row ${correct && !isCorrect ? 'dim' : ''}`}>
+          <div key={o.id} className={`bar-row ${correct && !isCorrect ? 'dim' : ''}`} style={tone(index)}>
             <span className="bar-label">
               {shapes ? <QuizShape index={index} /> : null}
               <span className="bar-text">{o.label}</span>
@@ -394,8 +443,8 @@ function Bars({
             <div className="bar-track">
               <div className="bar-fill" style={{ width: `${pct}%` }} />
             </div>
-            <span className="bar-value tabular" title={hidden ? undefined : formatNumber(n, language)}>
-              {hidden || total === 0 ? '' : formatPercent(n, total, language)}
+            <span className="bar-value tabular" title={formatNumber(n, language)}>
+              {percentLabel(n, total, hidden, language)}
             </span>
           </div>
         );
@@ -411,7 +460,7 @@ function wallSize(count: number): string {
   return 'size-s';
 }
 
-/** Masonry wall, newest top-left, max 24 visible, gentle scroll of the overflow every 6 s (§6.7). */
+/** Masonry wall of tinted cards, newest top-left, max 24 visible, gentle scroll of the overflow every 6 s. */
 function Wall({
   entries,
   hideLabel,
@@ -441,6 +490,8 @@ function Wall({
       clearInterval(scroller);
     };
   }, []);
+  // Colour follows the entry (stable while new cards arrive), not its position.
+  const colourOf = new Map([...entries].sort((a, b) => a.at - b.at).map((e, i) => [e.id, i]));
   const cols: (typeof visible)[] = Array.from({ length: columns }, () => []);
   visible.forEach((entry, i) => cols[i % columns]?.push(entry));
   return (
@@ -448,7 +499,7 @@ function Wall({
       {cols.map((col, ci) => (
         <div key={ci} className="wall-col">
           {col.map((entry) => (
-            <div key={entry.id} className="wall-card hideable">
+            <div key={entry.id} className="wall-card hideable" style={tone(colourOf.get(entry.id) ?? 0)}>
               {entry.text}
               {onHide ? (
                 <button
@@ -471,8 +522,8 @@ function Wall({
 }
 
 /**
- * Scale (§6.7): one row per statement with its distribution and average marker. The axis numbers, the end
- * labels and the "average" heading appear once for all rows instead of on every row.
+ * Scale: one row per statement (in its own colour) with its distribution and average. Axis numbers, end labels
+ * and the "average" heading appear once for all rows.
  */
 function Scale({
   config,
@@ -496,13 +547,13 @@ function Scale({
         ))}
       </div>
       <span className="scale-head">{t('stage.averageLabel')}</span>
-      {config.statements.map((statement) => {
+      {config.statements.map((statement, index) => {
         const row = results?.statements.find((s) => s.id === statement.id);
         const histogram = row?.histogram ?? values.map(() => 0);
         const peak = Math.max(1, ...histogram);
         const average = row?.average ?? null;
         return (
-          <div key={statement.id} className="scale-row">
+          <div key={statement.id} className="scale-row" style={tone(index)}>
             <span className="scale-label">{statement.label}</span>
             <div className="scale-plot">
               <div className="scale-hist" aria-hidden="true">
@@ -575,8 +626,8 @@ function Quiz({
       <div className="quiz-grid">
         <div className={`quiz-options ${config.options.length > 4 ? 'six' : ''}`}>
           {config.options.map((o, index) => (
-            <div key={o.id} className="quiz-option">
-              <QuizShape index={index} />
+            <div key={o.id} className="quiz-option" style={tone(index)}>
+              <QuizShape index={index} plain />
               <span>{o.label}</span>
             </div>
           ))}
@@ -589,14 +640,14 @@ function Quiz({
           ) : (
             <div className="quiz-timer" role="timer">
               <svg viewBox="0 0 100 100" aria-hidden="true">
-                <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track)" strokeWidth="7" />
+                <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track)" strokeWidth="8" />
                 <circle
                   cx="50"
                   cy="50"
                   r={r}
                   fill="none"
-                  stroke="var(--heading)"
-                  strokeWidth="7"
+                  stroke="var(--primary)"
+                  strokeWidth="8"
                   strokeLinecap="round"
                   strokeDasharray={circumference}
                   strokeDashoffset={circumference * (1 - fraction)}
@@ -614,7 +665,7 @@ function Quiz({
   // reveal (and closed)
   return (
     <div className="stage-fill">
-      <Bars
+      <Columns
         options={config.options}
         counts={results?.counts ?? {}}
         total={results?.respondents ?? 0}
@@ -627,15 +678,26 @@ function Quiz({
   );
 }
 
-/** Top 10 in one column; ranks 1–3 emphasised by size (§6.7), no medals. */
+/** Badge colours for ranks 1–3: amber (gold), primary, coral. */
+const RANK_TONE = [2, 0, 1];
+
+/** Top 10 with a bar for the points; ranks 1–3 get a coloured badge and a larger name. */
 function Leaderboard({ view, t, language }: { view: LeaderboardView | null; t: Translate; language: Language }) {
   if (!view || view.entries.length === 0) return <Waiting>{t('stage.leaderboardEmpty')}</Waiting>;
+  const top = Math.max(1, ...view.entries.map((e) => e.points));
   return (
     <ol className="board">
       {view.entries.map((e) => (
-        <li key={`${e.rank}-${e.nickname}`} className={`board-row ${e.rank <= 3 ? `top-${e.rank}` : 'rest'}`}>
+        <li
+          key={`${e.rank}-${e.nickname}`}
+          className={`board-row ${e.rank <= 3 ? `top top-${e.rank}` : 'rest'}`}
+          style={tone(RANK_TONE[e.rank - 1] ?? 0)}
+        >
           <span className="board-rank tabular">{e.rank}</span>
-          <span className="board-name">{e.nickname}</span>
+          <span className="board-main">
+            <span className="board-name">{e.nickname}</span>
+            <span className="board-bar" style={{ width: `${(e.points / top) * 100}%` }} aria-hidden="true" />
+          </span>
           <span className="board-points tabular">{formatNumber(e.points, language)}</span>
         </li>
       ))}

@@ -10,6 +10,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "pnpm manifest:build && pnpm -r --filter \"./apps/*\" build",
     "start": "node apps/server/dist/index.js",
+    "start:online": "node scripts/online.mjs",
     "certs": "office-addin-dev-certs install",
     "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
     "lint": "eslint . --max-warnings 0",

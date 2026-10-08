@@ -88,14 +88,18 @@ The German one-page guide for lecturers is [docs/presenter-guide.de.md](docs/pre
 
 Phones can't reach `localhost` on your laptop. Two options:
 
-**A — Quick test with a free tunnel (no server needed):**
+**A — One click, no server needed: `Start-Pulse-Online`**
 
-1. Install cloudflared: Windows `winget install --id Cloudflare.cloudflared`, Mac `brew install cloudflared`.
-2. With Pulse running, open a second terminal: `cloudflared tunnel --url https://localhost:3443 --no-tls-verify`
-3. It prints an address like `https://something-random.trycloudflare.com`. Open the file `.env` in the Pulse
-   folder, add the line `PUBLIC_BASE_URL=https://something-random.trycloudflare.com`, then restart Pulse
-   (close the window, start again).
-4. Slides now show that address and QR code. The address changes every time you start the tunnel — repeat step 3.
+Double-click **`Start-Pulse-Online.command`** (Mac) or **`Start-Pulse-Online.cmd`** (Windows) instead of
+`Start-Pulse`. It starts Pulse together with a free Cloudflare tunnel, sets the public address by itself and prints
+it, e.g. `Phones join at: https://something-random.trycloudflare.com`. The slides show that address and QR code
+automatically — nothing to edit. The first start downloads `cloudflared` once (or uses an installed one). The
+address changes with every start, which is fine: the slides update themselves when they connect. Keep the window
+open while presenting; closing it stops Pulse and the tunnel. (From a terminal: `pnpm start:online`.)
+
+Manual way, if you prefer: install cloudflared (`brew install cloudflared` / `winget install --id
+Cloudflare.cloudflared`), run `cloudflared tunnel --url https://localhost:3443 --no-tls-verify` and put the printed
+address into `.env` as `PUBLIC_BASE_URL=…`, then restart Pulse.
 
 **B — Real use in lectures:** run Pulse on a server with a fixed domain (e.g. `pulse.example.at`). See
 [docs/deployment.md](docs/deployment.md): one `docker compose up` on any Linux VM (Hetzner, university VM), HTTPS

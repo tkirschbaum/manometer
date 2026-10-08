@@ -158,4 +158,57 @@ describe('quiz engine', () => {
     p.close();
     presenter.close();
   });
+
+  it('anonymous quiz names: phones get an automatic name and can answer without typing one', async () => {
+    const { deckId, deckSecret } = newDeck();
+    const presenter = await connectPresenter(server.url, deckId, deckSecret);
+    const deck = await next<PresenterDeckState>(presenter, 'deck:state');
+    await call(presenter, 'deck:upsert', { settings: { ...deck.settings, quizNames: 'anonymous' } });
+    const quiz = quizConfig(deckId);
+    await call(presenter, 'item:upsert', quiz);
+
+    const p = await connectParticipant(server.url, deck.joinCode);
+    const me = await next<{ nickname: string | null }>(p, 'me', (m) => m.nickname !== null);
+    expect(me.nickname).toMatch(/^\p{L}+ \d{1,3}$/u);
+    const state = await next<ParticipantDeckState>(p, 'deck:state');
+    expect(state.deck).toMatchObject({ hasQuiz: true, quizNames: 'anonymous' });
+
+    await call(presenter, 'item:activate', { itemId: quiz.id, config: quiz });
+    await clock.advance(3000);
+    const answer = await call(p, 'response:submit', {
+      itemId: quiz.id,
+      clientResponseId: newUuid(),
+      payload: { type: 'quiz', optionId: 'w' },
+    });
+    expect(answer.ok).toBe(true);
+    p.close();
+    presenter.close();
+  });
+
+  it('names asked: phones learn on join that a name is needed, answers without one are refused', async () => {
+    const { deckId, deckSecret } = newDeck();
+    const presenter = await connectPresenter(server.url, deckId, deckSecret);
+    const deck = await next<PresenterDeckState>(presenter, 'deck:state');
+    const p = await connectParticipant(server.url, deck.joinCode);
+    expect((await next<ParticipantDeckState>(p, 'deck:state')).deck).toMatchObject({
+      hasQuiz: false,
+      quizNames: 'ask',
+    });
+    // Adding the first quiz tells phones that joined earlier.
+    const quiz = quizConfig(deckId);
+    const told = next<ParticipantDeckState>(p, 'deck:state', (s) => s.deck.hasQuiz);
+    await call(presenter, 'item:upsert', quiz);
+    expect((await told).deck.quizNames).toBe('ask');
+    await call(presenter, 'item:activate', { itemId: quiz.id, config: quiz });
+    await clock.advance(3000);
+    expect(
+      await call(p, 'response:submit', {
+        itemId: quiz.id,
+        clientResponseId: newUuid(),
+        payload: { type: 'quiz', optionId: 'w' },
+      }),
+    ).toEqual({ ok: false, error: 'NICKNAME_REQUIRED' });
+    p.close();
+    presenter.close();
+  });
 });

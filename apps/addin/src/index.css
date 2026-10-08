@@ -1,26 +1,33 @@
 @import 'tailwindcss';
-@import '@fontsource/source-sans-3/latin-400.css';
-@import '@fontsource/source-sans-3/latin-600.css';
-@import '@fontsource/source-sans-3/latin-700.css';
+@import '@fontsource/figtree/latin-400.css';
+@import '@fontsource/figtree/latin-600.css';
+@import '@fontsource/figtree/latin-700.css';
+@import '@fontsource/figtree/latin-800.css';
 @import './stage/stage.css';
 
 /*
- * Design tokens (master prompt §11). PROVISIONAL values until the klu tokens are extracted
- * (docs/brand-tokens.md). Keep in sync with packages/shared/src/tokens.ts.
+ * Design tokens (master prompt §11): Pulse's own look, see docs/brand-tokens.md.
+ * Keep in sync with packages/shared/src/tokens.ts and the stage variables (apps/addin/src/stage/stage.css).
  */
 @theme {
-  --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
-  --color-navy: #1b2a4a;
-  --color-navy-soft: #2c3d63;
-  --color-red: #c8102e;
-  --color-ink: #1a1f2b;
+  --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --color-ink: #101834;
+  --color-muted: #5d6585;
+  --color-line: #e2e5ef;
+  --color-mist: #f4f5fa;
   --color-paper: #ffffff;
-  --color-mist: #eef1f5;
-  --color-line: #d5dbe3;
-  --color-muted: #5b6573;
-  --color-teal: #1f6f6b;
-  --color-ochre: #8f6410;
-  --radius-brand: 6px;
+  --color-primary: #3d5af1;
+  --color-primary-dark: #2c45d1;
+  --color-primary-soft: #eef1ff;
+  --color-coral: #f0574a;
+  --color-ok: #16a37f;
+  --color-c1: #3d5af1;
+  --color-c2: #f0574a;
+  --color-c3: #f5a524;
+  --color-c4: #16a37f;
+  --color-c5: #7c5cf0;
+  --color-c6: #e04a8a;
+  --radius-brand: 8px;
 }
 
 @layer base {
@@ -37,7 +44,7 @@
     overflow: hidden;
   }
   :focus-visible {
-    outline: 2px solid var(--color-red);
+    outline: 2px solid var(--color-primary);
     outline-offset: 1px;
   }
   button,

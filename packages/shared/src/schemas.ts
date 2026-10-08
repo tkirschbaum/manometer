@@ -30,6 +30,8 @@ export const deckSettingsSchema = z.object({
   theme: z._default(themeSchema, 'light'),
   qaEnabled: z._default(z.boolean(), false),
   showQr: z._default(z.boolean(), true),
+  /** Quiz: participants enter a name when they join ('ask') or get an automatic one ('anonymous'). */
+  quizNames: z._default(z.enum(['ask', 'anonymous']), 'ask'),
 });
 export type DeckSettings = z.output<typeof deckSettingsSchema>;
 
@@ -39,6 +41,7 @@ export const defaultDeckSettings: DeckSettings = {
   theme: 'light',
   qaEnabled: false,
   showQr: true,
+  quizNames: 'ask',
 };
 
 // ---------------------------------------------------------------------------
@@ -355,7 +358,14 @@ export const itemStateMessageSchema = z.object({
 export type ItemStateMessage = z.output<typeof itemStateMessageSchema>;
 
 export const participantDeckStateSchema = z.object({
-  deck: z.object({ title: z.string(), slideLanguage: languageSchema, qaEnabled: z.boolean() }),
+  deck: z.object({
+    title: z.string(),
+    slideLanguage: languageSchema,
+    qaEnabled: z.boolean(),
+    /** Whether the presentation contains a quiz, and how quiz names work (name asked right after joining). */
+    hasQuiz: z._default(z.boolean(), false),
+    quizNames: z._default(z.enum(['ask', 'anonymous']), 'ask'),
+  }),
   activeItem: z.nullable(publicItemViewSchema),
   serverNow: z.number(),
 });

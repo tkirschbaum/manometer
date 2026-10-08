@@ -53,13 +53,41 @@ function MoreOptions({
         onClick={() => {
           setOpen(!open);
         }}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left font-semibold text-navy"
+        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left font-semibold text-ink"
       >
         {label}
         <ChevronDownIcon size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open ? <div className="flex flex-col gap-3 border-t border-line px-3 py-3">{children}</div> : null}
     </section>
+  );
+}
+
+/** Names or anonymous play; a deck setting, so it applies to every quiz question of the presentation. */
+export function QuizNamesField({
+  value,
+  onChange,
+  t,
+  label,
+}: {
+  value: DeckSettings['quizNames'];
+  onChange: (value: DeckSettings['quizNames']) => void;
+  t: Translate;
+  label?: string;
+}) {
+  const text = label ?? t('editor.quizNames');
+  return (
+    <Field label={text} hint={value === 'ask' ? t('editor.quizNamesHint.ask') : t('editor.quizNamesHint.anonymous')}>
+      <Segmented
+        label={text}
+        value={value}
+        options={[
+          { value: 'ask' as const, label: t('editor.quizNames.ask') },
+          { value: 'anonymous' as const, label: t('editor.quizNames.anonymous') },
+        ]}
+        onChange={onChange}
+      />
+    </Field>
   );
 }
 
@@ -226,16 +254,25 @@ export function ItemForm({ draft, onChange, deckSettings, onDeckSettings, t }: P
       ) : null}
 
       {draft.type === 'quiz' ? (
-        <Field label={t('editor.timeLimit')}>
-          <Segmented
-            label={t('editor.timeLimit')}
-            value={draft.timeLimitSec}
-            options={QUIZ_TIME_LIMITS.map((n) => ({ value: n, label: t('editor.seconds', { n }) }))}
+        <>
+          <Field label={t('editor.timeLimit')}>
+            <Segmented
+              label={t('editor.timeLimit')}
+              value={draft.timeLimitSec}
+              options={QUIZ_TIME_LIMITS.map((n) => ({ value: n, label: t('editor.seconds', { n }) }))}
+              onChange={(v) => {
+                set('timeLimitSec', v);
+              }}
+            />
+          </Field>
+          <QuizNamesField
+            value={deckSettings.quizNames}
             onChange={(v) => {
-              set('timeLimitSec', v);
+              onDeckSettings({ quizNames: v });
             }}
+            t={t}
           />
-        </Field>
+        </>
       ) : null}
 
       <MoreOptions label={t('editor.moreOptions')} initiallyOpen={hasAdvanced(draft)}>

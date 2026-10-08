@@ -38,7 +38,12 @@ export interface Presenter {
 export async function openPresenter(
   browser: Browser,
   draft: DraftOverrides,
-  deckSettings: Partial<{ title: string; qaEnabled: boolean; slideLanguage: 'de' | 'en' }> = {},
+  deckSettings: Partial<{
+    title: string;
+    qaEnabled: boolean;
+    slideLanguage: 'de' | 'en';
+    quizNames: 'ask' | 'anonymous';
+  }> = {},
 ): Promise<Presenter> {
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, locale: 'de-AT' });
   const page = await context.newPage();

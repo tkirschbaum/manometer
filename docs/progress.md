@@ -145,8 +145,8 @@ confirmation was fading in (test now waits for running transitions).
 - **Real PowerPoint verification** on Windows and Mac: [manual-test-protocol.md](manual-test-protocol.md) (and,
   if time allows, the deeper [phase0-checklist.md](phase0-checklist.md)). The launchers are untested on real
   Windows/macOS, and add-in registration (`office-addin-dev-settings`) only runs there.
-- **klu tokens** still provisional (kl.ac.at blocked here); `BRAND_LOGO_ENABLED` slot not implemented (no logo is
-  used, which matches the default).
+- ~~klu tokens~~ superseded: Pulse has its own design since the round below ([brand-tokens.md](brand-tokens.md)).
+  `BRAND_LOGO_ENABLED` slot not implemented (no logo is used, which matches the default).
 - **Privacy notice** is a draft with placeholders — DSB review required (noted in deployment.md).
 - **Manifest validation** against Microsoft's online service (`pnpm manifest:validate`) is blocked here; run it
   once locally.
@@ -239,3 +239,103 @@ Changes:
 
 Not verifiable here: WebKit itself (only Chromium in this container). The fix avoids the mechanism instead of
 relying on a WebKit behaviour; please confirm on the Mac.
+
+---
+
+## Round after the network test — quiz names, smooth slide changes, new design, word cloud, launcher
+
+Tobias's feedback after running Pulse with phones over a tunnel: quiz with a choice between names and anonymous
+(names asked at the beginning), a "slide in between" when changing slides, a nicer Mentimeter-like design for the
+slides, the editor and the phone site, word cloud words outside the slide, quality-of-life improvements.
+
+### Quiz: with names or anonymous
+
+- New deck setting `quizNames: 'ask' | 'anonymous'` (default `ask`), shown in the quiz form (*Teilnahme: Mit Namen /
+  Anonym*, with a one-line hint) and in the presentation settings. It applies to all quiz questions of the deck.
+- *Mit Namen:* phones ask for the name **right after joining** (before the first question) when the deck contains a
+  quiz (`deck.hasQuiz` in the participant deck state). The in-question prompt stays as a fallback.
+- *Anonym:* no prompt; the server assigns a unique name like "Otter 42" (`domain/anonymousName.ts`, DE/EN animal
+  lists) on connect or on the first quiz answer and sends it with `me` (now emitted before `deck:state`). The phone
+  shows "Anonym als Otter 42"; the leaderboard and the export use that name.
+
+### Smooth slide changes ("slide in between")
+
+Causes found: (1) leaving a Pulse slide deactivated its question at once, so phones showed "Warte auf die nächste
+Frage …" for the 1–2 s until the next slide's frame had loaded and activated; (2) a newly loaded frame started
+without results (big QR "waiting" state) and briefly "Verbindung wird hergestellt …"; (3) the frame was blank while
+Office.js and the bundle loaded.
+
+- **Handover window** (`TIMING.handoverMs` = 2.5 s): after the last holder deactivates, the server waits before
+  clearing the active item; if the next Pulse slide activates meanwhile, phones switch directly. After a normal
+  slide they go to the waiting screen 2.5 s later. Integration-tested both ways.
+- **Presenter cache** (`apps/addin/src/live/cache.ts`): last results, item state, participants, leaderboard and Q&A
+  per item/deck in `localStorage` (expires after 12 h, only on the presenter's computer), so a slide
+  renders its last results immediately. Timed quiz phases are never restored.
+- "Connecting …" and the dimmed chart only after 1.5 s without connection (`useSustained`).
+- **Startup placeholder** (`public/boot.js` + styles in `index.html`): until React renders, the frame shows the
+  slide background and the join code pill of the last Pulse slide, sized like the real strip (JS-measured px, no
+  cq/vh font sizes). Removed on the app's first render.
+- Phones: new questions settle in with a short rise animation.
+
+### New design (no klu corporate design)
+
+- Tokens in [brand-tokens.md](brand-tokens.md): ink `#101834`, primary `#3D5AF1`, six-colour palette (blue, coral,
+  amber, green, violet, pink) with text colours, font **Figtree** 400–800, pill buttons, 16 px cards on phones.
+- **Slides:** code in a pill; question 800 weight; multiple choice as coloured **columns** (≤ 6 answers of ≤ 42
+  characters; tallest column = full height, percentages on top) or coloured bars for long/many answers; quiz
+  answers as filled colour tiles with shapes; quiz reveal as columns with the correct one highlighted; tinted
+  cards on the open-text wall; scale rows in the palette; leaderboard with coloured rank badges and point bars;
+  Q&A with vote pills; footer "N Antworten" left, "N Personen dabei" right; brighter palette in the dark theme.
+- **Phone app:** new mark (blue badge with a pulse line), pill buttons, soft input fields, selected answers tinted,
+  quiz answers as large colour tiles with a time bar, "Antwort gesendet" with a check badge, result card for the
+  quiz, waiting screen with a soft ripple, results in the palette, segmented tabs.
+- **Editor:** colour-coded type cards, pill buttons and segmented controls, focus ring on inputs.
+- New icons (favicon, add-in icons, phone app icons) rendered from `favicon.svg`.
+
+### Word cloud
+
+Words could leave the slide because d3-cloud measures text on a canvas, and the rendered SVG text can be wider
+(other font metrics, font loaded later, web view differences). Now the rendered words are measured (`getBBox` of
+each word, independent of running move transitions) and the whole cloud is scaled and centred to fit; the layout
+is redone when a font finishes loading; a single long word is capped to the width; when d3-cloud drops words the
+layout is retried up to 5× at 85 % size. Colours by rank from the palette. Worst-case gallery sample
+`word_cloud_long` (20 long German compounds).
+
+### Quality of life
+
+- Answer editor: **Enter** = next answer (adds one at the end), **Backspace** in an empty answer removes it,
+  **pasting several lines** fills several answers (list markers removed; `model/pasteList.ts`, unit-tested).
+- Slide footer shows how many people are connected.
+- Short vibration on Android when an answer is sent.
+- **`Start-Pulse-Online.command` / `.cmd`** and `pnpm start:online` (`scripts/online.mjs`): starts a Cloudflare
+  quick tunnel (installed `cloudflared`, or downloaded once into `.tools/` from Cloudflare's GitHub releases), reads
+  its address, starts Pulse with `PUBLIC_BASE_URL` for that run and prints the address. No `.env` editing; slides
+  pick up the new address when they connect. Stops tunnel and server together. Tested here with a stub
+  `cloudflared` and with the real binary (download and error path; this container cannot reach Cloudflare's
+  tunnel API).
+
+### Dependencies
+
+- `@fontsource/source-sans-3` → **`@fontsource/figtree`** (both apps): the new design's font; same licence (OFL)
+  and packaging. No other new runtime dependencies.
+
+### Deviations from the master prompt
+
+| Spec | Now | Why |
+|---|---|---|
+| §11: klu corporate design tokens | own Pulse design (Mentimeter-like) | Tobias: "we dont need to do it in KLU design" |
+| §6.6: deactivate when the slide is left | deactivation after a 2.5 s handover window | no waiting screen between two Pulse slides |
+| §7: nickname asked inside the first quiz question | asked right after joining (*Mit Namen*) or not at all (*Anonym*) | Tobias's request |
+| §6.7: bars for multiple choice | columns for few short answers, bars otherwise | Mentimeter-like, reads better from the back |
+
+### Verified
+
+`pnpm typecheck`, `pnpm lint`, `pnpm test` (54 tests) clean, `prettier --check` clean; e2e 42/42 (new: quiz
+with names asked at the start, anonymous quiz; the waiting-screen test allows for the handover window).
+Screenshots reviewed: every slide type light/dark incl. worst cases, editor (type picker, quiz form with
+*Teilnahme*), phone flow (join, waiting, multiple choice, sent + results, name step, quiz tiles, sent, result,
+anonymous). Participant bundle 111 kB gz (≤ 120 kB).
+
+Not verifiable here: PowerPoint itself (WebKit on the Mac, WebView2 on Windows), a real tunnel (Cloudflare not
+reachable from this container), the launchers on real Windows/macOS.
+

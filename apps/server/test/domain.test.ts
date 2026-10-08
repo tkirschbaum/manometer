@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { anonymousName } from '../src/domain/anonymousName';
 import { csvCell, toCsv } from '../src/domain/csv';
 import { allocateJoinCode, isAcceptableJoinCode, randomJoinCode } from '../src/domain/joinCode';
 import { quizPoints, rankLeaderboard } from '../src/domain/scoring';
@@ -8,6 +9,19 @@ import { isoInZone, localClock } from '../src/domain/time';
 import { TokenService } from '../src/domain/tokens';
 import { displayForm, normaliseWord } from '../src/domain/words';
 import { SlidingWindowLimiter } from '../src/domain/rateLimit';
+
+describe('anonymous quiz names', () => {
+  it('are "Animal number", unique against taken names, in the slide language', () => {
+    const name = anonymousName('de', new Set());
+    expect(name).toMatch(/^\p{L}+ \d{1,2}$/u);
+    // Fixed randomness: the first candidate is taken, so the next one is used.
+    const values = [0, 0, 0, 0.5];
+    let i = 0;
+    const random = () => values[i++ % values.length] ?? 0;
+    expect(anonymousName('de', new Set(['otter 1']), random)).toBe('Otter 50');
+    expect(anonymousName('en', new Set(), () => 0.2)).toBe('Fox 20');
+  });
+});
 
 describe('quiz scoring', () => {
   it('scores 1000 for instant, 500 at the limit, 0 when wrong', () => {

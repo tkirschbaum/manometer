@@ -1,5 +1,5 @@
 import { createTranslator, languageFromLocale } from '@pulse/shared';
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AddinController } from './controller';
 import { Editor } from './editor/Editor';
 import { useLive } from './live/live';
@@ -17,6 +17,11 @@ export function App({ host, harness }: { host: OfficeHost; harness: HarnessContr
     };
   }, [controller]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+  // The real UI is rendered now: remove the startup placeholder (public/boot.js).
+  useLayoutEffect(() => {
+    document.documentElement.removeAttribute('data-boot');
+    document.documentElement.removeAttribute('data-boot-code');
+  }, []);
   const live = useLive(controller.live);
   // Add-in UI follows Office's display language; the slides follow the deck setting (§6.8).
   const t = useMemo(() => createTranslator(languageFromLocale(host.displayLanguage)), [host]);

@@ -1,5 +1,6 @@
 import { LIMITS, type DeckSettings, type Translate } from '@pulse/shared';
 import { Button, Field, Segmented, Toggle, inputClass } from '../ui/controls';
+import { QuizNamesField } from './ItemForm';
 
 /** Session settings (§4.3 deck-level settings): inline, never a modal (§6.8). */
 export function SettingsPanel({
@@ -15,7 +16,7 @@ export function SettingsPanel({
 }) {
   return (
     <section aria-labelledby="settings-title" className="flex flex-col gap-3 rounded-brand border border-line p-3">
-      <h2 id="settings-title" className="font-bold text-navy">
+      <h2 id="settings-title" className="font-bold text-ink">
         {t('editor.settings.title')}
       </h2>
       <Field label={t('editor.settings.deckTitle')} htmlFor="deck-title">
@@ -72,6 +73,14 @@ export function SettingsPanel({
           onChange({ showQr: v });
         }}
         label={t('editor.settings.qr')}
+      />
+      <QuizNamesField
+        value={settings.quizNames}
+        onChange={(v) => {
+          onChange({ quizNames: v });
+        }}
+        t={t}
+        label={t('editor.settings.quizNames')}
       />
       <Button variant="primary" className="self-start" onClick={onClose}>
         {t('common.done')}

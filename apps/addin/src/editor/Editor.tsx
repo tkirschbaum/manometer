@@ -4,7 +4,7 @@ import type { AddinController, ControllerState } from '../controller';
 import type { LiveState } from '../live/live';
 import { SLIDE_KINDS, kindOf, previewConfig, type SlideKind } from '../model/draft';
 import { Stage } from '../stage/Stage';
-import { liveStageData } from '../stage/SlideshowStage';
+import { liveStageData, useRememberBoot, useSustained } from '../stage/SlideshowStage';
 import { Button, ConfirmDialog, Menu, MenuItem, Toast } from '../ui/controls';
 import { CheckIcon, ChevronDownIcon, KindIcon, MoreIcon, PencilIcon } from '../ui/icons';
 import { ItemForm } from './ItemForm';
@@ -68,7 +68,7 @@ export function Editor({
   if (webUnsupported) {
     return (
       <div className="flex h-full items-center p-6">
-        <p role="alert" className="text-[16px] font-semibold text-navy">
+        <p role="alert" className="text-[16px] font-semibold text-ink">
           {t('editor.webUnsupported')}
         </p>
       </div>
@@ -161,15 +161,18 @@ function SlideView({
   t: Translate;
   onEdit: () => void;
 }) {
+  const offline = useSustained(live.status !== 'connected', 1500);
+  const data = liveStageData(state, live, controller.config, offline);
+  useRememberBoot(data.theme, data.joinCode);
   return (
     <div className="group relative h-full cursor-pointer" onClick={onEdit}>
-      <Stage data={liveStageData(state, live, controller.config)} />
+      <Stage data={data} />
       {state.duplicate ? (
         <div className="absolute inset-x-3 top-3 flex items-center gap-2 rounded-brand border border-line bg-paper px-3 py-1.5 text-[13px] text-ink">
           <span className="min-w-0 flex-1">{t('editor.duplicateBanner')}</span>
           <button
             type="button"
-            className="font-semibold text-navy underline"
+            className="font-semibold text-ink underline"
             onClick={(e) => {
               e.stopPropagation();
               controller.fork();
@@ -185,7 +188,7 @@ function SlideView({
           e.stopPropagation();
           onEdit();
         }}
-        className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-brand border border-line bg-paper/95 px-3 py-1.5 text-[13px] font-semibold text-navy transition-colors group-hover:border-navy group-hover:bg-navy group-hover:text-paper"
+        className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-brand border border-line bg-paper/95 px-3 py-1.5 text-[13px] font-semibold text-ink transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-paper"
       >
         <PencilIcon size={15} />
         {t('editor.edit')}
@@ -251,7 +254,7 @@ function EditView({
   else if (!connected) status = t('editor.status.offline');
   else
     status = (
-      <span className="inline-flex items-center gap-1 text-navy">
+      <span className="inline-flex items-center gap-1 text-ink">
         <CheckIcon size={14} strokeWidth={2.5} />
         {t('editor.status.ready')}
       </span>
@@ -351,7 +354,7 @@ function EditView({
             }}
           >
             <span
-              className={`inline-block size-2 rounded-full ${connected ? 'bg-red' : 'bg-line'}`}
+              className={`inline-block size-2 rounded-full ${connected ? 'bg-coral' : 'bg-line'}`}
               aria-hidden="true"
             />
             <span className="tabular">
@@ -535,7 +538,7 @@ function Banner({ children, onClose, closeLabel }: { children: ReactNode; onClos
     <div className="flex flex-none items-start gap-2 border-b border-line bg-mist px-3 py-1.5" role="status">
       <p className="min-w-0 flex-1">{children}</p>
       {onClose ? (
-        <button type="button" onClick={onClose} className="shrink-0 font-semibold text-navy underline">
+        <button type="button" onClick={onClose} className="shrink-0 font-semibold text-ink underline">
           {closeLabel}
         </button>
       ) : null}

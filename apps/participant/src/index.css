@@ -1,25 +1,32 @@
 @import 'tailwindcss';
-@import '@fontsource/source-sans-3/latin-400.css';
-@import '@fontsource/source-sans-3/latin-600.css';
-@import '@fontsource/source-sans-3/latin-700.css';
+@import '@fontsource/figtree/latin-400.css';
+@import '@fontsource/figtree/latin-600.css';
+@import '@fontsource/figtree/latin-700.css';
+@import '@fontsource/figtree/latin-800.css';
 
 /*
- * Design tokens (master prompt §11). PROVISIONAL values from §11.1 step 4 until the klu tokens are
- * extracted (see docs/brand-tokens.md). Keep in sync with packages/shared/src/tokens.ts.
+ * Design tokens (master prompt §11): Pulse's own look, see docs/brand-tokens.md.
+ * Keep in sync with packages/shared/src/tokens.ts and the stage variables (apps/addin/src/stage/stage.css).
  */
 @theme {
-  --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
-  --color-navy: #1b2a4a;
-  --color-navy-soft: #2c3d63;
-  --color-red: #c8102e;
-  --color-ink: #1a1f2b;
+  --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --color-ink: #101834;
+  --color-muted: #5d6585;
+  --color-line: #e2e5ef;
+  --color-mist: #f4f5fa;
   --color-paper: #ffffff;
-  --color-mist: #eef1f5;
-  --color-line: #d5dbe3;
-  --color-muted: #5b6573;
-  --color-teal: #1f6f6b;
-  --color-ochre: #8f6410;
-  --radius-brand: 6px;
+  --color-primary: #3d5af1;
+  --color-primary-dark: #2c45d1;
+  --color-primary-soft: #eef1ff;
+  --color-coral: #f0574a;
+  --color-ok: #16a37f;
+  --color-c1: #3d5af1;
+  --color-c2: #f0574a;
+  --color-c3: #f5a524;
+  --color-c4: #16a37f;
+  --color-c5: #7c5cf0;
+  --color-c6: #e04a8a;
+  --radius-brand: 16px;
 }
 
 @layer base {
@@ -32,7 +39,7 @@
     line-height: 1.45;
   }
   :focus-visible {
-    outline: 3px solid var(--color-red);
+    outline: 3px solid var(--color-primary);
     outline-offset: 2px;
   }
   button,
@@ -75,9 +82,68 @@
   animation: fade-in 250ms ease-out;
 }
 
+/* A new question or result settles in from slightly below. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise-in {
+  animation: rise-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Confirmation badge (answer sent, correct answer). */
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pop {
+  animation: pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Waiting: two soft rings around a dot. */
+@keyframes ripple {
+  from {
+    opacity: 0.5;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.ripple {
+  animation: ripple 2.4s ease-out infinite;
+}
+
+.ripple-late {
+  animation: ripple 2.4s ease-out 1.2s infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .breathing,
-  .fade-in {
+  .fade-in,
+  .rise-in,
+  .pop,
+  .ripple,
+  .ripple-late {
     animation: none;
   }
   * {

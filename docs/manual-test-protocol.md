@@ -8,7 +8,7 @@ PowerPoint can check is below. Run it on **Windows** and on the **Mac** (about 3
 Phase 0 (`spikes/office-spike`, [phase0-checklist.md](phase0-checklist.md)) tests the raw platform behaviour in
 more depth; this protocol tests the finished product. If time is short, run this one.
 
-**Setup:** Pulse running (`Start-Pulse` or a server), add-in added ([sideloading.md](sideloading.md)), for steps
+**Setup:** Pulse running (`Start-Pulse-Online` for phones without a server, `Start-Pulse`, or a server), add-in added ([sideloading.md](sideloading.md)), for steps
 with phones the address on the slide must be reachable (tunnel or server). Note versions:
 
 - W: Windows ___ · PowerPoint version (File → Account → About) ___ · local / server
@@ -22,10 +22,11 @@ with phones the address on the slide must be reachable (tunnel or server). Note 
 |---|---|---|---|
 | A1 | New presentation, blank slide → insert Pulse | Frame asks "What would you like to ask?" with seven type cards | W: · M: |
 | A2 | Drag the frame to fill the slide | Frame resizes; content stays readable | W: · M: |
-| A3 | *Multiple choice* → question "Wie geht's?", answers "Gut", "Müde", "Hungrig" (umlauts!) | Header shows code `123 456`-style with a red dot; preview next to the form (large frame); footer "Ready to present" | W: · M: |
+| A3 | *Multiple choice* → question "Wie geht's?", answers "Gut", "Müde", "Hungrig" (umlauts!) — type the answers with **Enter** between them | Header shows code `123 456`-style with a dot; Enter jumps to the next answer and adds one at the end; preview next to the form (large frame); footer "Ready to present" | W: · M: |
+| A3b | Copy three lines from a text editor ("Rot", "Grün", "Blau") and paste them into an empty answer | The three lines fill three answers | W: · M: |
 | A4 | Click *Done*; then click the slide | *Done* shows the slide as in the slideshow (empty bars, no sample data); clicking it reopens the form | W: · M: |
 | A5 | Slide 2: insert Pulse → *Word cloud* | No extra step; same code as slide 1 | W: · M: |
-| A6 | Slide 3: *Quiz*, 2 answers, click the correct one, 20 s, *More options* → start *by click* | Footer reports nothing missing | W: · M: |
+| A6 | Slide 3: *Quiz*, 2 answers, click the correct one, 20 s, *Participation* → *With names*, *More options* → start *by click* | Footer reports nothing missing | W: · M: |
 | A7 | Slide 4: *Leaderboard*; slide 5: *Audience Q&A* → *Switch on audience questions* | Both show their info text, no error | W: · M: |
 | A8 | Change slide 1 type via the type menu → confirm | Dialog warns; new type appears | W: · M: |
 | A9 | Click outside the frame (on the PowerPoint slide) while editing a complete question | Frame switches back to the slide view | W: · M: |
@@ -45,12 +46,13 @@ with phones the address on the slide must be reachable (tunnel or server). Note 
 |---|---|---|---|
 | C1 | Start the slideshow from slide 1 (one monitor) | Question; only the 6-digit code in a slim bar, small QR code; layout fills the slide | W: · M: |
 | C1b | Click the code bar on the slide; click again | QR code, address and code full screen; second click closes it | W: · M: |
-| C2 | Three phones (iPhone + Android if possible) scan the QR code | Phones show the question; slide shows the responses as they answer | W: · M: |
+| C2 | Three phones (iPhone + Android if possible) scan the QR code | The phones ask for a name first (the deck has a quiz with names), then show the question; slide shows the responses as they answer; bottom right "3 people joined" | W: · M: |
 | C2b | Slide 2 (word cloud) before anyone answers | Large QR code in the middle with "No responses yet"; disappears with the first word | W: · M: |
-| C3 | Next slide (word cloud) | Phones switch to the word cloud within ~1 s; slide 1 is no longer active on the phones | W: · M: |
-| C4 | Each phone sends 3 words incl. "Herz", "herz", "Größe" | Words merge case-insensitively; umlauts correct | W: · M: |
+| C3 | Next slide (word cloud) | Phones switch **directly** to the word cloud within ~1–2 s (no "waiting" screen in between); the slide does not flash empty or "Connecting …" | W: · M: |
+| C4 | Each phone sends 3 words incl. "Herz", "herz", "Größe", "Donaudampfschifffahrt" | Words merge case-insensitively; umlauts correct; every word stays inside the slide, also the long one | W: · M: |
 | C5 | Quiz slide: click *Start quiz* on the slide | Countdown, then timer; phones answer; correct answer + points shown at the end | W: · M: |
 | C6 | Leaderboard slide | Nicknames with points | W: · M: |
+| C6b | Switch *Participation* to *Anonymous* (⋯ → presentation settings), new phone joins, quiz again | No name prompt; the phone shows "Anonymous as Otter 42"-style; the leaderboard shows that name | W: · M: |
 | C7 | Q&A: a phone asks a question, others upvote | Question appears on the Q&A slide, sorted by votes | W: · M: |
 | C8 | **Presenter view with two monitors** (or *Use presenter view* on one monitor): go through slides 1–3 | Only the **current** slide's question is active on the phones; the next-slide preview does not activate early | W: · M: |
 | C9 | During the slideshow turn **Wi-Fi off for 20 s**, then on | Slide shows "Connecting …", then continues; answers sent meanwhile on phones are not lost | W: · M: |

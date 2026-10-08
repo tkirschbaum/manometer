@@ -127,11 +127,11 @@ export function PrivacyScreen() {
   return (
     <Shell>
       <article className="mt-4">
-        <h1 className="text-[28px] font-bold text-navy">{content.title}</h1>
+        <h1 className="text-[28px] font-bold text-ink">{content.title}</h1>
         <p className="mt-3 rounded-brand bg-mist px-4 py-3 text-[16px] font-semibold">{content.draft}</p>
         {content.sections.map((section) => (
           <section key={section.heading} className="mt-7">
-            <h2 className="text-[20px] font-bold text-navy">{section.heading}</h2>
+            <h2 className="text-[20px] font-bold text-ink">{section.heading}</h2>
             {section.paragraphs.map((p) => (
               <p key={p} className="mt-2 text-[17px]">
                 {p}

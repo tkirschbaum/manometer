@@ -8,6 +8,8 @@ import { Gallery } from './stage/Gallery';
 const root = document.getElementById('root');
 const params = new URLSearchParams(window.location.search);
 if (root && params.has('gallery')) {
+  document.documentElement.removeAttribute('data-boot');
+  document.documentElement.removeAttribute('data-boot-code');
   createRoot(root).render(<Gallery params={params} />);
 } else if (root) {
   void selectHost().then(({ host, harness }) => {

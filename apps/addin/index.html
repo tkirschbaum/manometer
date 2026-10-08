@@ -6,6 +6,38 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Pulse</title>
     <script src="/history-guard.js"></script>
+    <script src="/boot.js"></script>
+    <!-- Startup placeholder, see public/boot.js. Matches the join strip in src/stage/stage.css. -->
+    <style>
+      html[data-boot] {
+        background: #ffffff;
+      }
+      html[data-boot='dark'],
+      html[data-boot='dark'] body {
+        background: #141b3d;
+      }
+      html[data-boot-code]::before {
+        content: attr(data-boot-code);
+        position: fixed;
+        top: calc(3.55 * var(--boot-u));
+        left: calc(4 * var(--boot-uw));
+        padding: calc(0.9 * var(--boot-u)) calc(1.8 * var(--boot-uw));
+        border-radius: 999px;
+        background: #f4f5fa;
+        color: #3d5af1;
+        font:
+          800 calc(5.6 * var(--boot-u)) / 1 'Figtree',
+          'Segoe UI',
+          system-ui,
+          sans-serif;
+        letter-spacing: 0.04em;
+        font-variant-numeric: tabular-nums;
+      }
+      html[data-boot='dark'][data-boot-code]::before {
+        background: #1e2754;
+        color: #7b91ff;
+      }
+    </style>
     <!-- Office.js must load before the app bundle (§6.9). -->
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   </head>

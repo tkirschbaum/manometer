@@ -36,7 +36,7 @@ export function ConfirmDialog({
       aria-labelledby="confirm-title"
       className="m-auto w-[min(92vw,440px)] rounded-brand border border-line p-6 text-ink backdrop:bg-ink/40"
     >
-      <h2 id="confirm-title" className="text-[22px] font-bold text-navy">
+      <h2 id="confirm-title" className="text-[22px] font-bold text-ink">
         {title}
       </h2>
       <p className="mt-3 text-[17px]">{body}</p>

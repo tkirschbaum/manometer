@@ -44,7 +44,7 @@ export function QaTab({ state, session }: { state: SessionState; session: Sessio
           onChange={(e) => {
             setText(e.target.value);
           }}
-          className="w-full resize-none rounded-brand border-2 border-line px-4 py-3 text-[18px] focus:border-navy focus:outline-none"
+          className="w-full resize-none rounded-brand border-2 border-transparent bg-mist px-4 py-3 text-[18px] transition-colors focus:border-primary focus:bg-paper focus:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-4">
           <span className="tabular text-[15px] text-muted" aria-live="polite">
@@ -72,7 +72,7 @@ export function QaTab({ state, session }: { state: SessionState; session: Sessio
             onClick={() => {
               setSort(s);
             }}
-            className={`min-h-11 rounded-brand border-2 px-4 text-[16px] font-semibold ${sort === s ? 'border-navy bg-navy text-paper' : 'border-line text-navy hover:border-navy'}`}
+            className={`min-h-10 rounded-full border-2 px-4 text-[16px] font-bold ${sort === s ? 'border-ink bg-ink text-paper' : 'border-line text-ink hover:border-primary'}`}
           >
             {s === 'top' ? t('qa.sortTop') : t('qa.sortNew')}
           </button>
@@ -85,10 +85,7 @@ export function QaTab({ state, session }: { state: SessionState; session: Sessio
           const voted = state.qaVoted.has(q.id);
           const mine = state.qaMine.has(q.id);
           return (
-            <li
-              key={q.id}
-              className={`fade-in flex gap-3 rounded-brand border border-line p-3 ${q.answered ? 'opacity-55' : ''}`}
-            >
+            <li key={q.id} className={`rise-in flex gap-3 rounded-brand bg-mist p-3 ${q.answered ? 'opacity-55' : ''}`}>
               <button
                 type="button"
                 aria-pressed={voted}
@@ -96,7 +93,7 @@ export function QaTab({ state, session }: { state: SessionState; session: Sessio
                 onClick={() => {
                   session.qaVote(q.id, !voted);
                 }}
-                className={`tabular flex min-h-14 min-w-14 flex-col items-center justify-center rounded-brand border-2 text-[16px] font-bold ${voted ? 'border-navy bg-navy text-paper' : 'border-line text-navy hover:border-navy'}`}
+                className={`tabular flex min-h-14 min-w-14 flex-col items-center justify-center rounded-xl border-2 text-[16px] font-extrabold transition-colors ${voted ? 'border-primary bg-primary text-paper' : 'border-transparent bg-paper text-primary hover:border-primary'}`}
               >
                 <ArrowUpIcon size={18} strokeWidth={2.5} />
                 {q.upvotes}
@@ -105,7 +102,7 @@ export function QaTab({ state, session }: { state: SessionState; session: Sessio
                 <p className="text-[17px] break-words">{q.text}</p>
                 <p className="mt-1 flex flex-wrap gap-x-3 text-[14px] text-muted">
                   <span className="tabular">{plural(t, 'qa.votes', q.upvotes)}</span>
-                  {mine ? <span className="font-semibold text-navy">{t('qa.mine')}</span> : null}
+                  {mine ? <span className="font-semibold text-ink">{t('qa.mine')}</span> : null}
                   {q.answered ? <span>{t('qa.answered')}</span> : null}
                 </p>
               </div>

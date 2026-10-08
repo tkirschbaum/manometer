@@ -18,7 +18,7 @@ import {
 let server: TestServer;
 
 beforeAll(async () => {
-  server = await startServer({ timing: { activeGraceMs: 300 } });
+  server = await startServer({ timing: { activeGraceMs: 300, handoverMs: 400 } });
 });
 
 afterAll(async () => {
@@ -179,6 +179,43 @@ describe('activation', () => {
     p.close();
     a.close();
     b.close();
+  });
+
+  it('moving to the next Pulse slide switches phones directly, without the waiting screen in between', async () => {
+    const { deckId, deckSecret, presenter: a, state } = await openDeck();
+    const b = await connectPresenter(server.url, deckId, deckSecret);
+    const item1 = mcConfig(deckId);
+    const item2 = mcConfig(deckId);
+    await call(a, 'item:activate', { itemId: item1.id, config: item1 });
+    const p = await connectParticipant(server.url, state.joinCode);
+    expect((await next<ParticipantDeckState>(p, 'deck:state')).activeItem?.id).toBe(item1.id);
+    const seen: (string | null)[] = [];
+    p.on('deck:state', (s: ParticipantDeckState) => seen.push(s.activeItem?.id ?? null));
+    // Slide 1 is left first; slide 2's frame needs a moment to load before it activates.
+    await call(a, 'item:deactivate', { itemId: item1.id });
+    await sleep(150);
+    await call(b, 'item:activate', { itemId: item2.id, config: item2 });
+    await sleep(600);
+    expect(seen).not.toContain(null);
+    expect(seen.at(-1)).toBe(item2.id);
+    p.close();
+    a.close();
+    b.close();
+  });
+
+  it('a normal slide after a Pulse slide shows the waiting screen after the handover window', async () => {
+    const { deckId, presenter, state } = await openDeck();
+    const item = mcConfig(deckId);
+    await call(presenter, 'item:activate', { itemId: item.id, config: item });
+    const p = await connectParticipant(server.url, state.joinCode);
+    await next<ParticipantDeckState>(p, 'deck:state');
+    const started = Date.now();
+    const waiting = next<ParticipantDeckState>(p, 'deck:state', (x) => x.activeItem === null);
+    await call(presenter, 'item:deactivate', { itemId: item.id });
+    expect((await waiting).activeItem).toBeNull();
+    expect(Date.now() - started).toBeGreaterThanOrEqual(350);
+    p.close();
+    presenter.close();
   });
 
   it('clears the active item after the grace period when the presenter disconnects', async () => {

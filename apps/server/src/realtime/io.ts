@@ -247,8 +247,9 @@ function attachParticipants(nsp: ParticipantNamespace, hub: Hub, logger: HubLogg
     socket.data.initial = undefined;
     void socket.join([rooms.audience(deckId), rooms.participant(deckId, participantId)]);
     if (initial) {
-      socket.emit('deck:state', initial.state);
+      // Nickname first: the phone decides from it whether to ask for a name before showing anything else.
       socket.emit('me', { nickname: initial.nickname });
+      socket.emit('deck:state', initial.state);
     }
     void hub.participantReady(deckId, participantId);
     socket.on('disconnect', () => {

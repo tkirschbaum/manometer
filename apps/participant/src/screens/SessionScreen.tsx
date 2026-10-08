@@ -1,7 +1,7 @@
 import type { PublicItemView, ResponsePayload } from '@pulse/shared';
 import { useState } from 'react';
 import { MultipleChoiceInput, OpenTextInput, ScaleInput, WordCloudInput, describeAnswer } from '../answer/inputs';
-import { QuizView } from '../answer/quiz';
+import { NicknamePrompt, QuizView } from '../answer/quiz';
 import { PhoneResults } from '../answer/results';
 import { Button } from '../components/Button';
 import { ConnectionBanner } from '../components/ConnectionBanner';
@@ -14,6 +14,15 @@ import { JoinScreen } from './JoinScreen';
 import { QaTab } from './QaTab';
 
 type Tab = 'live' | 'qa';
+
+/** A short vibration as feedback on Android phones (ignored where unsupported). */
+function tap(): void {
+  try {
+    navigator.vibrate(12);
+  } catch {
+    // not supported
+  }
+}
 
 export function SessionScreen({ code }: { code: string }) {
   const [participantId] = useState(() => getParticipantId());
@@ -58,7 +67,7 @@ export function SessionScreen({ code }: { code: string }) {
 function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   const { t } = useI18n();
   return (
-    <div role="tablist" className="mb-2 grid grid-cols-2 border-b border-line">
+    <div role="tablist" className="mb-3 grid grid-cols-2 gap-1 rounded-full bg-mist p-1">
       {(['live', 'qa'] as const).map((id) => (
         <button
           key={id}
@@ -68,7 +77,7 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
           onClick={() => {
             onChange(id);
           }}
-          className={`min-h-12 border-b-[3px] text-[17px] font-semibold ${tab === id ? 'border-navy text-navy' : 'border-transparent text-muted hover:text-navy'}`}
+          className={`min-h-11 rounded-full text-[17px] font-bold transition-colors ${tab === id ? 'bg-paper text-ink shadow-sm' : 'text-muted hover:text-primary'}`}
         >
           {id === 'live' ? t('session.tabLive') : t('session.tabQa')}
         </button>
@@ -80,11 +89,21 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
 function Waiting() {
   const { t } = useI18n();
   return (
-    <div className="mt-12 flex items-center gap-3" role="status">
-      <span className="breathing inline-block size-3 rounded-full bg-navy" aria-hidden="true" />
-      <p className="text-[20px] text-ink">{t('session.waiting')}</p>
+    <div className="fade-in flex flex-1 flex-col items-center justify-center pb-16 text-center" role="status">
+      <span className="relative flex size-28 items-center justify-center" aria-hidden="true">
+        <span className="ripple absolute inset-0 rounded-full bg-primary/25" />
+        <span className="ripple-late absolute inset-0 rounded-full bg-primary/25" />
+        <span className="relative size-5 rounded-full bg-primary" />
+      </span>
+      <p className="mt-6 text-[22px] font-extrabold text-ink">{t('session.waiting')}</p>
+      <p className="mt-2 text-[16px] text-muted">{t('session.waitingHint')}</p>
     </div>
   );
+}
+
+/** The presenter asks for names: ask right after joining, before the first question (deck setting "quizNames"). */
+function needsName(state: SessionState): boolean {
+  return state.deck?.hasQuiz === true && state.deck.quizNames === 'ask' && !state.nickname;
 }
 
 function LiveView({
@@ -98,14 +117,15 @@ function LiveView({
 }) {
   const { t } = useI18n();
   const item = state.activeItem;
+  if (needsName(state)) return <NicknamePrompt session={session} intro />;
   if (!item) return <Waiting />;
   if (item.kind === 'leaderboard') {
     const last = state.lastQuizResult;
     return (
-      <div className="mt-10">
-        <p className="text-[20px]">{t('session.leaderboard')}</p>
+      <div className="rise-in mt-10">
+        <p className="text-[20px] font-semibold">{t('session.leaderboard')}</p>
         {last && last.rank !== null ? (
-          <p className="tabular mt-4 text-[24px] font-bold text-navy">
+          <p className="tabular mt-4 inline-flex rounded-full bg-primary-soft px-4 py-2 text-[24px] font-extrabold text-primary">
             {t('quiz.rank', { rank: last.rank, total: last.rankOf })}
           </p>
         ) : null}
@@ -114,8 +134,8 @@ function LiveView({
   }
   if (item.kind === 'qa_wall') {
     return (
-      <div className="mt-10">
-        <p className="text-[20px]">{state.deck?.qaEnabled ? t('session.qaWall') : t('qa.disabled')}</p>
+      <div className="rise-in mt-10">
+        <p className="text-[20px] font-semibold">{state.deck?.qaEnabled ? t('session.qaWall') : t('qa.disabled')}</p>
         {state.deck?.qaEnabled ? (
           <Button variant="secondary" className="mt-6" onClick={onOpenQa}>
             {t('session.openQa')}
@@ -147,6 +167,7 @@ function QuestionView({
   const submit = (payload: ResponsePayload): void => {
     session.submit(payload);
     setComposing(false);
+    tap();
   };
   const error = state.error ? (
     <p role="alert" className="mt-4 flex items-start gap-2 text-[17px] font-semibold">
@@ -162,14 +183,15 @@ function QuestionView({
     (item.state !== 'open' || mine.length > 0);
 
   return (
-    <article className="mt-4 flex flex-1 flex-col">
-      <h1 className="text-[26px] leading-snug font-bold break-words text-navy">{item.prompt}</h1>
+    <article className="rise-in mt-4 flex flex-1 flex-col">
+      <h1 className="text-[27px] leading-tight font-extrabold tracking-tight break-words text-ink">{item.prompt}</h1>
       <div className="mt-5 flex flex-1 flex-col">
         {item.type === 'quiz' ? (
           <QuizView
             item={item}
             session={session}
             nickname={state.nickname}
+            anonymous={state.deck?.quizNames === 'anonymous'}
             answered={all[0] ?? null}
             queued={queued.length > 0}
             result={state.quizResult}
@@ -225,10 +247,12 @@ function Sent({
   return (
     <div role="status" className="flex flex-col">
       {closed ? (
-        <p className="text-[22px] font-bold text-navy">{t('session.closed')}</p>
+        <p className="text-[22px] font-extrabold text-ink">{t('session.closed')}</p>
       ) : (
-        <p className="flex items-center gap-2 text-[22px] font-bold text-navy">
-          <CheckIcon size={24} strokeWidth={3} />
+        <p className="flex items-center gap-3 text-[24px] font-extrabold text-ink">
+          <span className="pop flex size-10 items-center justify-center rounded-full bg-ok text-paper">
+            <CheckIcon size={22} strokeWidth={3} />
+          </span>
           {t('session.sent')}
         </p>
       )}
@@ -238,7 +262,7 @@ function Sent({
           {multiple ? <h2 className="mt-5 text-[15px] font-semibold text-muted">{t('session.answersSent')}</h2> : null}
           <ul className="mt-2 flex flex-col gap-2">
             {answers.map((a, i) => (
-              <li key={i} className="fade-in rounded-brand bg-mist px-4 py-3 text-[18px] break-words">
+              <li key={i} className="rise-in rounded-brand bg-mist px-4 py-3 text-[18px] font-semibold break-words">
                 {describeAnswer(item, a)}
               </li>
             ))}

@@ -64,10 +64,10 @@ export function MultipleChoiceInput({ item, onSubmit, disabled = false }: InputP
               onClick={() => {
                 toggle(option.id);
               }}
-              className={`flex min-h-14 w-full items-center gap-3 rounded-brand border-2 px-4 py-3 text-left text-[18px] transition-colors ${on ? 'border-navy bg-mist font-semibold text-navy' : 'border-line bg-paper text-ink hover:border-navy'}`}
+              className={`flex min-h-15 w-full items-center gap-3 rounded-brand border-2 px-4 py-3 text-left text-[18px] font-semibold transition-[background-color,border-color,transform] active:scale-[0.99] ${on ? 'border-primary bg-primary-soft text-ink' : 'border-line bg-paper text-ink hover:border-primary/60'}`}
             >
               <span
-                className={`flex size-6 shrink-0 items-center justify-center border-2 ${item.allowMultiple ? 'rounded-[4px]' : 'rounded-full'} ${on ? 'border-navy bg-navy text-paper' : 'border-muted'}`}
+                className={`flex size-6 shrink-0 items-center justify-center border-2 transition-colors ${item.allowMultiple ? 'rounded-[7px]' : 'rounded-full'} ${on ? 'border-primary bg-primary text-paper' : 'border-[#c9cee0] bg-paper'}`}
                 aria-hidden="true"
               >
                 {on ? <CheckIcon size={16} strokeWidth={3} /> : null}
@@ -109,7 +109,7 @@ export function WordCloudInput({ item, onSubmit, disabled = false, used }: Input
         onChange={(e) => {
           setText(e.target.value);
         }}
-        className="w-full rounded-brand border-2 border-line px-4 py-3 text-[20px] focus:border-navy focus:outline-none"
+        className="w-full rounded-brand border-2 border-transparent bg-mist px-4 py-3.5 text-[20px] font-semibold transition-colors focus:border-primary focus:bg-paper focus:outline-none"
       />
       <div className="tabular mt-2 flex justify-between text-[15px] text-muted">
         <span>{t('wc.remaining', { n: item.entriesPerParticipant - used, total: item.entriesPerParticipant })}</span>
@@ -146,7 +146,7 @@ export function OpenTextInput({ onSubmit, disabled = false }: InputProps) {
         onChange={(e) => {
           setText(e.target.value);
         }}
-        className="w-full resize-none rounded-brand border-2 border-line px-4 py-3 text-[18px] focus:border-navy focus:outline-none"
+        className="w-full resize-none rounded-brand border-2 border-transparent bg-mist px-4 py-3 text-[18px] transition-colors focus:border-primary focus:bg-paper focus:outline-none"
       />
       <p className="tabular mt-2 text-right text-[15px] text-muted" aria-live="polite">
         {t('text.counter', { n: text.length, max: LIMITS.textMax })}
@@ -173,7 +173,7 @@ export function ScaleInput({ item, onSubmit, disabled = false }: InputProps) {
       <div className="mt-4 flex flex-col gap-7">
         {item.statements.map((statement) => (
           <fieldset key={statement.id}>
-            <legend className="text-[18px] font-semibold text-ink">{statement.label}</legend>
+            <legend className="text-[18px] font-bold text-ink">{statement.label}</legend>
             {/* 5 per row: 1–5 in one row, 1–10 in two rows, every target at least 48 px wide. */}
             <div className="mt-3 grid grid-cols-5 gap-2">
               {values.map((v) => {
@@ -188,7 +188,7 @@ export function ScaleInput({ item, onSubmit, disabled = false }: InputProps) {
                     onClick={() => {
                       setRatings((r) => ({ ...r, [statement.id]: v }));
                     }}
-                    className={`tabular min-h-12 rounded-brand border-2 text-[18px] font-semibold ${on ? 'border-navy bg-navy text-paper' : 'border-line bg-paper text-navy hover:border-navy'}`}
+                    className={`tabular min-h-12 rounded-xl border-2 text-[18px] font-bold transition-colors ${on ? 'border-primary bg-primary text-paper' : 'border-line bg-paper text-ink hover:border-primary/60'}`}
                   >
                     {v}
                   </button>

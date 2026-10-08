@@ -2,9 +2,9 @@ import { useEffect, useRef, type ButtonHTMLAttributes, type ReactNode } from 're
 
 type Variant = 'primary' | 'secondary' | 'quiet';
 const variants: Record<Variant, string> = {
-  primary: 'border-navy bg-navy text-paper hover:bg-navy-soft',
-  secondary: 'border-line bg-paper text-navy hover:border-navy',
-  quiet: 'border-transparent bg-transparent text-navy hover:bg-mist',
+  primary: 'border-primary bg-primary text-paper hover:border-primary-dark hover:bg-primary-dark',
+  secondary: 'border-line bg-paper text-ink hover:border-primary hover:text-primary',
+  quiet: 'border-transparent bg-transparent text-ink hover:bg-mist',
 };
 
 export function Button({
@@ -16,7 +16,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`inline-flex min-h-8 items-center justify-center gap-1.5 rounded-brand border px-3 font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${variants[variant]} ${className}`}
+      className={`inline-flex min-h-8 items-center justify-center gap-1.5 rounded-full border px-3.5 font-bold whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${variants[variant]} ${className}`}
       {...rest}
     />
   );
@@ -45,7 +45,7 @@ export function Field({
 }
 
 export const inputClass =
-  'w-full rounded-brand border border-line bg-paper px-2.5 py-1.5 text-ink placeholder:text-muted/70 focus:border-navy focus:outline-none';
+  'w-full rounded-brand border border-line bg-paper px-2.5 py-1.5 text-ink transition-[border-color,box-shadow] placeholder:text-muted/70 hover:border-[#c9cee0] focus:border-primary focus:shadow-[0_0_0_3px_rgb(61_90_241/0.15)] focus:outline-none';
 
 export function Toggle({
   checked,
@@ -72,7 +72,7 @@ export function Toggle({
       />
       <span
         aria-hidden="true"
-        className="relative h-5 w-9 shrink-0 rounded-full bg-line transition-colors peer-checked:bg-navy peer-focus-visible:outline-2 peer-focus-visible:outline-red after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-paper after:transition-transform peer-checked:after:translate-x-4"
+        className="relative h-5 w-9 shrink-0 rounded-full bg-line transition-colors peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-primary after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-paper after:transition-transform peer-checked:after:translate-x-4"
       />
       <span>{label}</span>
     </label>
@@ -91,7 +91,7 @@ export function Segmented<T extends string | number>({
   label: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap rounded-brand border border-line p-0.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap self-start rounded-full bg-mist p-0.5">
       {options.map((o) => (
         <button
           key={String(o.value)}
@@ -101,7 +101,7 @@ export function Segmented<T extends string | number>({
           onClick={() => {
             onChange(o.value);
           }}
-          className={`tabular min-h-7 rounded-[4px] px-2.5 font-semibold ${o.value === value ? 'bg-navy text-paper' : 'text-navy hover:bg-mist'}`}
+          className={`tabular min-h-7 rounded-full px-3 font-semibold transition-colors ${o.value === value ? 'bg-paper text-primary shadow-[0_1px_3px_rgb(16_24_52/0.18)]' : 'text-muted hover:text-ink'}`}
         >
           {o.label}
         </button>
@@ -209,7 +209,7 @@ export function ConfirmDialog({
       }}
       className="m-auto w-[min(92vw,380px)] rounded-brand border border-line p-4 text-ink backdrop:bg-ink/40"
     >
-      <h2 id="dlg-title" className="text-[16px] font-bold text-navy">
+      <h2 id="dlg-title" className="text-[16px] font-bold text-ink">
         {title}
       </h2>
       <p className="mt-2">{body}</p>
@@ -228,7 +228,7 @@ export function Toast({ message }: { message: string | null }) {
   return (
     <div
       role="status"
-      className="fixed bottom-3 left-1/2 z-40 -translate-x-1/2 rounded-brand bg-navy px-3 py-2 font-semibold text-paper"
+      className="fixed bottom-3 left-1/2 z-40 -translate-x-1/2 rounded-brand bg-primary px-3 py-2 font-semibold text-paper"
     >
       {message}
     </div>

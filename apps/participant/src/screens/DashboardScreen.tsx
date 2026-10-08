@@ -111,7 +111,7 @@ export function DashboardScreen() {
 
   return (
     <Shell title={status.kind === 'ready' ? status.data.deck.title : null}>
-      <h1 className="mt-4 text-[28px] font-bold text-navy">{t('dashboard.title')}</h1>
+      <h1 className="mt-4 text-[28px] font-bold text-ink">{t('dashboard.title')}</h1>
       {status.kind === 'loading' ? <p className="mt-6 text-muted">{t('dashboard.loading')}</p> : null}
       {status.kind === 'expired' ? <p className="mt-6 text-[18px] font-semibold">{t('dashboard.expired')}</p> : null}
       {status.kind === 'ready' && session ? (
@@ -127,14 +127,14 @@ export function DashboardScreen() {
           ) : null}
           <div className="mt-6 flex flex-wrap gap-3">
             <a
-              className="inline-flex min-h-12 items-center rounded-brand border-2 border-navy bg-navy px-5 text-[18px] font-semibold text-paper hover:bg-navy-soft"
+              className="inline-flex min-h-12 items-center rounded-brand border-2 border-primary bg-primary px-5 text-[18px] font-semibold text-paper hover:bg-primary-dark"
               href={`/api/export/${status.data.deck.id}.csv?t=${encodeURIComponent(session)}`}
               download
             >
               {t('dashboard.exportCsv')}
             </a>
             <a
-              className="inline-flex min-h-12 items-center rounded-brand border-2 border-navy px-5 text-[18px] font-semibold text-navy hover:bg-mist"
+              className="inline-flex min-h-12 items-center rounded-brand border-2 border-primary px-5 text-[18px] font-semibold text-ink hover:bg-mist"
               href={`/api/export/${status.data.deck.id}.xlsx?t=${encodeURIComponent(session)}`}
               download
             >

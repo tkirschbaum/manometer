@@ -49,7 +49,7 @@ export function JoinScreen({ initialCode, notFound = false }: { initialCode?: st
   return (
     <Shell>
       <form onSubmit={(e) => void submit(e)} className="flex flex-1 flex-col" noValidate>
-        <h1 className="mt-6 text-[30px] leading-tight font-bold text-navy">{t('join.title')}</h1>
+        <h1 className="mt-8 text-[32px] leading-tight font-extrabold tracking-tight text-ink">{t('join.title')}</h1>
         <label htmlFor="join-code" className="mt-8 block text-[16px] font-semibold text-muted">
           {t('join.label')}
         </label>
@@ -70,7 +70,7 @@ export function JoinScreen({ initialCode, notFound = false }: { initialCode?: st
             setValue(pasted ? formatJoinCode(pasted) : groupDigits(e.target.value));
             if (status !== 'checking') setStatus('idle');
           }}
-          className="tabular mt-2 w-full rounded-brand border-2 border-line bg-paper px-4 py-3 text-[40px] font-bold tracking-[0.08em] text-navy placeholder:text-line focus:border-navy focus:outline-none"
+          className="tabular mt-2 w-full rounded-brand border-2 border-transparent bg-mist px-4 py-4 text-center text-[42px] font-extrabold tracking-[0.1em] text-ink transition-colors placeholder:text-[#c9cee0] focus:border-primary focus:bg-paper focus:outline-none"
         />
         <p id="join-hint" className="mt-3 text-[16px] text-muted">
           {t('join.hint')}

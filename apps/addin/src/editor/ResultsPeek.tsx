@@ -34,7 +34,7 @@ export function ResultsPeek({
         : [];
   return (
     <section className="border-t border-line pt-3">
-      <p className="tabular font-semibold text-navy">{plural(t, 'editor.responses', results.responses)}</p>
+      <p className="tabular font-semibold text-ink">{plural(t, 'editor.responses', results.responses)}</p>
       {items.length > 0 ? (
         <>
           <h3 className="mt-2 text-[12px] font-semibold text-muted">{t('editor.recentResponses')}</h3>
@@ -47,7 +47,7 @@ export function ResultsPeek({
                   onClick={item.hide}
                   title={t('stage.hide')}
                   aria-label={`${t('stage.hide')}: ${item.text}`}
-                  className="flex shrink-0 items-center gap-1 rounded-brand px-1.5 py-0.5 text-muted opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-mist hover:text-navy focus:opacity-100"
+                  className="flex shrink-0 items-center gap-1 rounded-brand px-1.5 py-0.5 text-muted opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-mist hover:text-primary focus:opacity-100"
                 >
                   <EyeOffIcon size={14} />
                   {t('stage.hide')}

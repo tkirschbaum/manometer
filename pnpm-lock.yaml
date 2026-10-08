@@ -53,7 +53,7 @@ importers:
 
   apps/addin:
     dependencies:
-      '@fontsource/source-sans-3':
+      '@fontsource/figtree':
         specifier: ^5.3.0
         version: 5.3.0
       '@pulse/shared':
@@ -108,7 +108,7 @@ importers:
 
   apps/participant:
     dependencies:
-      '@fontsource/source-sans-3':
+      '@fontsource/figtree':
         specifier: ^5.3.0
         version: 5.3.0
       '@pulse/shared':
@@ -951,8 +951,8 @@ packages:
     resolution: {integrity: sha512-WtcEoG/imdHRvC3vofGi/OcgH+cjHHhO0AfEeTlsnrKLjVKKBXV6aoIrB2nHZPpE7iW5sA7AZMR6bPD8ytxN+w==}
     engines: {node: '>= 10'}
 
-  '@fontsource/source-sans-3@5.3.0':
-    resolution: {integrity: sha512-VrWixSgF93kOVSEkwjs9ImnAbxrBew4PgcnaJYEitG9TyJSwxjFUNJIgzB1XFP/acyAWcTDg7+sWe7JI8LTB9w==}
+  '@fontsource/figtree@5.3.0':
+    resolution: {integrity: sha512-/iTcTXL1eRBGhvD7NN9dnKzXzWqDLVZVEUFI9xIxAC1G/hXU8tCyYeXCAuPOuvSYPInFUP7H6KLGgygmDfy1SA==}
 
   '@hono/node-server@2.1.3':
     resolution: {integrity: sha512-TA//nWMqPhbfdfneACk6t5a9eqbS9lABEPyKn0/xZTah3H3U2XaVg85rJFl0/Fyit0I552YDHgXGVSf3GwqbUw==}
@@ -5157,7 +5157,7 @@ snapshots:
 
   '@feathersjs/hooks@0.6.5': {}
 
-  '@fontsource/source-sans-3@5.3.0': {}
+  '@fontsource/figtree@5.3.0': {}
 
   '@hono/node-server@2.1.3(hono@4.13.12)':
     dependencies:

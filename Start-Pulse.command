@@ -1,5 +1,6 @@
 #!/bin/bash
 # Pulse for macOS: double-click to set up (first time) and start. Close this window (or Ctrl+C) to stop.
+# Start-Pulse-Online.command runs this with PULSE_ONLINE=1: Pulse plus a free tunnel, so phones can join.
 cd "$(dirname "$0")" || exit 1
 fail() { echo; echo "Something went wrong. Scroll up for the error message, or see README.md."; read -r -p "Press Enter to close."; exit 1; }
 
@@ -20,6 +21,10 @@ fi
 [ -f apps/server/dist/index.js ] || pnpm build || fail
 
 echo
+if [ "$PULSE_ONLINE" = "1" ]; then
+  echo "Starting Pulse online (phones can join from anywhere) ..."
+  exec node scripts/online.mjs
+fi
 echo "Pulse runs on https://localhost:3443 - keep this window open while presenting."
 (sleep 3; open "https://localhost:3443/") &
 exec pnpm start

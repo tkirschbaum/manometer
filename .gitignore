@@ -10,3 +10,4 @@ Thumbs.db
 test-results/
 playwright-report/
 apps/addin/public/manifest*.xml
+.tools/

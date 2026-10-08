@@ -40,13 +40,18 @@ pnpm addin:unregister  # remove it
 ### Phones in local mode (cloudflared quick tunnel)
 
 Phones cannot open `https://localhost:3443` on your laptop. A quick tunnel gives your local Pulse a temporary
-public HTTPS address:
+public HTTPS address. The easy way: start with **`Start-Pulse-Online.command`** (Mac) / **`Start-Pulse-Online.cmd`**
+(Windows) or `pnpm start:online` (`scripts/online.mjs`): it finds or downloads `cloudflared` (into `.tools/`),
+starts the tunnel, reads the address and starts Pulse with `PUBLIC_BASE_URL` set to it for that run (it overrides
+`.env`). QR code and join strip on the slides switch to the new address as soon as the slide connects; the add-in
+itself keeps loading from `localhost`.
+
+Manual way:
 
 1. Install cloudflared — Windows: `winget install --id Cloudflare.cloudflared`; Mac: `brew install cloudflared`.
 2. With Pulse running: `cloudflared tunnel --url https://localhost:3443 --no-tls-verify`
 3. Copy the printed `https://….trycloudflare.com` address into `.env` as `PUBLIC_BASE_URL=…` and restart Pulse.
-4. QR code and join strip on the slides now show the tunnel address (the add-in itself keeps loading from
-   `localhost`). The address changes each time you start the tunnel; update `.env` again.
+   The address changes each time you start the tunnel; update `.env` again.
 
 Quick tunnels are for testing only (no uptime guarantee, rate limits). For lectures use a server
 ([deployment.md](deployment.md)).

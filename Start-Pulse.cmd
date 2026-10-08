@@ -1,5 +1,6 @@
 @echo off
 rem Pulse for Windows: double-click to set up (first time) and start. Close this window to stop Pulse.
+rem Start-Pulse-Online.cmd runs this with PULSE_ONLINE=1: Pulse plus a free tunnel, so phones can join.
 setlocal
 cd /d "%~dp0"
 title Pulse
@@ -37,6 +38,11 @@ if not exist apps\server\dist\index.js (
 )
 
 echo.
+if "%PULSE_ONLINE%"=="1" (
+  echo Starting Pulse online ^(phones can join from anywhere^) ...
+  node scripts\online.mjs
+  goto :eof
+)
 echo Pulse runs on https://localhost:3443  -  keep this window open while presenting.
 start "" https://localhost:3443/
 call pnpm start

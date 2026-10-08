@@ -19,6 +19,7 @@ import {
 } from '@pulse/shared';
 import { useSyncExternalStore } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { liveCache } from './cache';
 
 type PresenterSocket = Socket<PresenterServerEvents, PresenterClientEvents>;
 
@@ -67,6 +68,8 @@ export class Live {
   private connectedKey: string | null = null;
   private readonly connectHandlers = new Set<() => void>();
   private offsets: number[] = [];
+  private deckId: string | null = null;
+  private cacheTimer: ReturnType<typeof setTimeout> | null = null;
 
   getSnapshot = (): LiveState => this.state;
 
@@ -78,6 +81,21 @@ export class Live {
   private set(patch: Partial<LiveState>): void {
     this.state = { ...this.state, ...patch };
     for (const l of this.listeners) l();
+    if ('results' in patch || 'item' in patch || 'participants' in patch || 'leaderboard' in patch || 'qa' in patch) {
+      this.scheduleCacheWrite();
+    }
+  }
+
+  /** Persists the last known live data (at most once per second) for an instant start next time. */
+  private scheduleCacheWrite(): void {
+    if (this.cacheTimer) return;
+    this.cacheTimer = setTimeout(() => {
+      this.cacheTimer = null;
+      const { item, results, participants, leaderboard, qa } = this.state;
+      if (this.itemId && (item || results)) liveCache.writeItem(this.itemId, { item, results });
+      if (this.deckId && this.state.status === 'connected')
+        liveCache.writeDeck(this.deckId, { participants, leaderboard, qa });
+    }, 1000);
   }
 
   private sampleClock(serverNow: number): void {
@@ -96,7 +114,9 @@ export class Live {
   setItem(itemId: string | null): void {
     if (this.itemId === itemId) return;
     this.itemId = itemId;
-    this.set({ item: null, results: null });
+    const cached = itemId ? liveCache.readItem(itemId) : null;
+    this.state = { ...this.state, item: cached?.item ?? null, results: cached?.results ?? null };
+    for (const l of this.listeners) l();
   }
 
   connect(deckId: string, deckSecret: string): void {
@@ -104,7 +124,9 @@ export class Live {
     if (this.connectedKey === key && this.socket) return;
     this.disconnect();
     this.connectedKey = key;
-    this.set({ status: 'connecting' });
+    this.deckId = deckId;
+    const cached = liveCache.readDeck(deckId);
+    this.set({ status: 'connecting', ...(cached ?? {}) });
     const socket: PresenterSocket = io(NAMESPACES.presenter, {
       auth: { deckId, deckSecret },
       reconnectionDelay: 1000,
@@ -170,8 +192,11 @@ export class Live {
     this.socket?.disconnect();
     this.socket = null;
     this.connectedKey = null;
+    this.deckId = null;
     this.offsets = [];
-    this.state = { ...initialState };
+    if (this.cacheTimer) clearTimeout(this.cacheTimer);
+    this.cacheTimer = null;
+    this.state = { ...initialState, item: this.state.item, results: this.state.results };
     for (const l of this.listeners) l();
   }
 

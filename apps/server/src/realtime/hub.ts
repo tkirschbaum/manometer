@@ -21,6 +21,7 @@ import {
   type ResponsePayload,
   type SlideItemConfig,
 } from '@pulse/shared';
+import { anonymousName } from '../domain/anonymousName';
 import { toPublicPayload, type StoredPayload } from '../domain/payloads';
 import { SlidingWindowLimiter } from '../domain/rateLimit';
 import { quizPoints, rankLeaderboard } from '../domain/scoring';
@@ -154,6 +155,8 @@ class DeckRuntime {
   /** Nicknames of participants seen since the deck was loaded (quiz answers need one). */
   readonly nicknames = new Map<string, string | null>();
   ranking: Ranking | null = null;
+  /** The deck contains at least one quiz item (phones then handle quiz names right after joining). */
+  hasQuiz = false;
   lastTouch = 0;
   evictTimer: Timer | null = null;
   countDebounce: Throttled | null = null;
@@ -245,12 +248,13 @@ export class Hub {
       const row = await this.store.getDeck(deckId);
       if (!row) return null;
       const deck = new DeckRuntime(row.id, row.joinCode, deckSettingsSchema.parse(row.settings), row.activeItemId);
+      deck.hasQuiz = (await this.store.listItems(deck.id)).some((item) => item.type === 'quiz');
       this.decks.set(deck.id, deck);
       if (deck.activeItemId) {
         const item = await this.loadItem(deck, deck.activeItemId);
         if (!item) deck.activeItemId = null;
         // After a restart nobody holds the active item yet; presenters re-activate on reconnect.
-        else this.startGrace(deck);
+        else this.startGrace(deck, this.timing.activeGraceMs);
       }
       return deck;
     })();
@@ -303,6 +307,11 @@ export class Hub {
     const item = await this.loadItem(deck, config.id);
     if (!item) throw new HubError('INTERNAL');
     item.config = config;
+    if (config.kind === 'question' && config.type === 'quiz' && !deck.hasQuiz) {
+      deck.hasQuiz = true;
+      // Phones that joined earlier now handle quiz names too (prompt or automatic name).
+      this.out.toAudience(deck.id, 'deck:state', this.participantState(deck));
+    }
     return item;
   }
 
@@ -359,7 +368,9 @@ export class Hub {
     const deck = this.decks.get(deckId);
     if (!deck) return;
     deck.presenterSockets.delete(socketId);
-    if (deck.holders.delete(socketId) && deck.holders.size === 0 && deck.activeItemId) this.startGrace(deck);
+    if (deck.holders.delete(socketId) && deck.holders.size === 0 && deck.activeItemId) {
+      this.startGrace(deck, this.timing.activeGraceMs);
+    }
     this.scheduleEviction(deck);
   }
 
@@ -433,11 +444,13 @@ export class Hub {
 
   async itemDeactivate(deckId: string, socketId: string, itemId: string): Promise<void> {
     const deck = await this.requireDeck(deckId);
-    await deck.run(async () => {
-      if (deck.activeItemId !== itemId) return;
+    await deck.run(() => {
+      if (deck.activeItemId !== itemId) return Promise.resolve();
       deck.holders.delete(socketId);
       // Only the last holder clears it; another item may have taken over meanwhile (no clobbering, §5.3).
-      if (deck.holders.size === 0) await this.clearActive(deck);
+      // Not immediately: the next slide usually activates within the handover window (smooth switch on phones).
+      if (deck.holders.size === 0) this.startGrace(deck, this.timing.handoverMs);
+      return Promise.resolve();
     });
   }
 
@@ -554,14 +567,14 @@ export class Hub {
   // ===========================================================================
   // Active item and grace
 
-  private startGrace(deck: DeckRuntime): void {
+  private startGrace(deck: DeckRuntime, ms: number): void {
     this.cancelGrace(deck);
     deck.graceTimer = this.scheduler.set(() => {
       deck.graceTimer = null;
       void deck.run(async () => {
         if (deck.holders.size === 0 && deck.activeItemId) await this.clearActive(deck);
       });
-    }, this.timing.activeGraceMs);
+    }, ms);
   }
 
   private cancelGrace(deck: DeckRuntime): void {
@@ -765,8 +778,12 @@ export class Hub {
     if (!row) throw new HubError('DECK_NOT_FOUND');
     const deck = await this.loadDeck(row.id);
     if (!deck) throw new HubError('DECK_NOT_FOUND');
-    const { nickname } = await this.store.touchParticipant(deck.id, participantId);
+    const touched = await this.store.touchParticipant(deck.id, participantId);
+    let nickname = touched.nickname;
     deck.nicknames.set(participantId, nickname);
+    if (!nickname && deck.hasQuiz && deck.settings.quizNames === 'anonymous') {
+      nickname = await this.assignAnonymousName(deck, participantId);
+    }
     const sockets = deck.participantSockets.get(participantId) ?? new Set<string>();
     sockets.add(socketId);
     deck.participantSockets.set(participantId, sockets);
@@ -807,6 +824,8 @@ export class Hub {
         title: deck.settings.title,
         slideLanguage: deck.settings.slideLanguage,
         qaEnabled: deck.settings.qaEnabled,
+        hasQuiz: deck.hasQuiz,
+        quizNames: deck.settings.quizNames,
       },
       activeItem: active
         ? toPublicItemView(active.config, {
@@ -876,7 +895,10 @@ export class Hub {
     let points: number | null = null;
     let responseMs: number | null = null;
     if (question.type === 'quiz' && stored.type === 'quiz') {
-      if (!deck.nicknames.get(participantId)) throw new HubError('NICKNAME_REQUIRED');
+      if (!deck.nicknames.get(participantId)) {
+        if (deck.settings.quizNames !== 'anonymous') throw new HubError('NICKNAME_REQUIRED');
+        await this.assignAnonymousName(deck, participantId);
+      }
       const startedAt = item.answeringStartedAt ?? now;
       responseMs = Math.max(0, Math.min(now - startedAt, question.timeLimitSec * 1000));
       points = quizPoints(stored.optionId === question.correctOptionId, responseMs, question.timeLimitSec);
@@ -962,6 +984,24 @@ export class Hub {
         }
         return payload;
     }
+  }
+
+  /** Anonymous quiz mode: a generated, unique name ("Otter 42"), stored like a chosen one. */
+  /** Serialised on the deck queue so two phones joining at once never get the same name. Callers are never inside `deck.run`. */
+  private assignAnonymousName(deck: DeckRuntime, participantId: string): Promise<string> {
+    return deck.run(async () => {
+      const existing = deck.nicknames.get(participantId);
+      if (existing) return existing;
+      const others = (await this.store.listNicknames(deck.id)).filter((p) => p.id !== participantId);
+      const language = deck.settings.slideLanguage;
+      const taken = new Set(others.map((p) => p.nickname?.toLocaleLowerCase(language)).filter((n): n is string => !!n));
+      const nickname = anonymousName(language, taken);
+      await this.store.setNickname(deck.id, participantId, nickname);
+      deck.nicknames.set(participantId, nickname);
+      deck.ranking = null;
+      this.out.toParticipant(deck.id, participantId, 'me', { nickname });
+      return nickname;
+    });
   }
 
   async setNickname(deckId: string, participantId: string, requested: string): Promise<string> {

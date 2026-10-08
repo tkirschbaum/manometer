@@ -116,6 +116,13 @@ const SAMPLES: Record<string, SlideItemConfig> = {
     ],
     allowMultiple: true,
   },
+  word_cloud_long: {
+    ...base,
+    id: id(12),
+    type: 'word_cloud',
+    prompt: 'Was verbinden Sie mit dem Krankenhausalltag?',
+    entriesPerParticipant: 3,
+  },
   quiz_long: {
     ...base,
     id: id(11),
@@ -135,6 +142,30 @@ const SAMPLES: Record<string, SlideItemConfig> = {
   },
 };
 
+/** Worst case for the word cloud: long compound words with very different counts. */
+const LONG_WORDS = [
+  'Dokumentationspflichten',
+  'Zusammenarbeit',
+  'Schichtdienst',
+  'Verantwortung',
+  'Personalmangel',
+  'Kommunikationsprobleme',
+  'Patientensicherheit',
+  'Teamgeist',
+  'Stress',
+  'Digitalisierung',
+  'Qualitätsmanagement',
+  'Weiterbildungsmöglichkeiten',
+  'Übergaben',
+  'Hygiene',
+  'Wertschätzung',
+  'Arbeitszeiten',
+  'Empathie',
+  'Bürokratie',
+  'Fachwissen',
+  'Notaufnahme',
+].map((text, i) => ({ key: text.toLowerCase(), text, count: Math.max(1, 30 - i * 3) }));
+
 /**
  * Development gallery for design review (§16 Phase 7 screenshots): every stage type with sample data.
  *   /addin/?gallery=<type>&theme=light|dark&state=answering|countdown|reveal|idle&lang=de|en&offline=1
@@ -144,6 +175,9 @@ export function Gallery({ params }: { params: URLSearchParams }) {
   const kind = params.get('gallery') ?? 'multiple_choice';
   const config = SAMPLES[kind] ?? SAMPLES.multiple_choice ?? null;
   const sample = previewResults(config);
+  if (kind === 'word_cloud_long' && sample.results?.type === 'word_cloud') {
+    sample.results = { ...sample.results, words: LONG_WORDS };
+  }
   const stateParam = params.get('state');
   let item: ItemLiveState = sample.item;
   if (stateParam === 'countdown') item = { state: 'countdown', revealed: false, phaseEndsAt: now + 2400 };
